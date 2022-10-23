@@ -1,0 +1,25 @@
+input files:
+- L1517B-methanol-all.csv:
+    name: 'methanol peak'
+    color: 'darkorchid'
+  L1517B-center-all.csv:
+    name: 'dust peak'
+    color: 'orchid'
+- L1521E-center-all.csv:
+    name: 'dust peak'
+    color: 'lightgreen'
+  L1521E-bulk-all.csv:
+    name: 'bulk'
+    color: 'tab:green'
+
+bar spacing: 0.4
+point spacing: 0.5
+figure size: [7, 6]
+legend position: [0.5, 1.2]
+legend font size: 10
+inferior limit: 1e-13
+
+compute cosine distance: yes
+compute mean abundance: yes
+compute mean molecular mass: yes
+use upper limits for calculations: yes

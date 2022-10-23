@@ -1,0 +1,19 @@
+input files:
+- L1544-methanol-all.csv:
+    name: 'methanol peak'
+    color: 'tab:red'
+  L1544-center-all.csv:
+    name: 'dust peak'
+    color: 'yellow'
+- L1498-methanol-all.csv:
+    name: 'methanol peak'
+    color: 'dodgerblue'
+  L1498-center-all.csv:
+    name: 'dust peak'
+    color: 'cyan'
+
+bar spacing: 0.25
+point spacing: 0.5
+figure size: [9, 7]
+legend position: [0.5, 1.2]
+inferior limit: 1e-13

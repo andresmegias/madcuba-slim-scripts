@@ -1,0 +1,108 @@
+%% LyX 2.3.6 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[10pt,spanish]{article}
+\usepackage{mathpazo}
+\usepackage{courier}
+\usepackage[LGR,T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage[a4paper]{geometry}
+\geometry{verbose,tmargin=1.5cm,bmargin=1.5cm,lmargin=1.5cm,rmargin=1.5cm,headheight=0cm,headsep=0cm,footskip=0.7cm,columnsep=0.8cm}
+\setlength{\parskip}{\medskipamount}
+\setlength{\parindent}{0pt}
+\usepackage{babel}
+\addto\shorthandsspanish{\spanishdeactivate{~<>}}
+
+\usepackage{amssymb}
+\usepackage{setspace}
+\setstretch{1.2}
+\usepackage[unicode=true,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=false,pdfborder={0 0 1},backref=false,colorlinks=false]
+ {hyperref}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+%% Because html converters don't know tabularnewline
+\providecommand{\tabularnewline}{\\}
+
+\@ifundefined{date}{}{\date{}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\usepackage{babel}
+
+
+
+
+
+\renewcommand{\fnum@figure}{Figure~\thefigure}
+\renewcommand{\fnum@table}{Table~\thetable}
+\usepackage[margin=10pt,font=footnotesize,labelfont=bf,labelsep=period,justification=justified]{caption}
+%justification=centering
+\usepackage[skip=4pt]{caption}
+
+
+
+
+
+\decimalpoint
+
+\usepackage{titlesec}
+%\titlespacing*{\section}{0pt}{3.5ex plus 1ex pt minus .2ex}{2.3ex plus .2ex}
+%\titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+%\titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+\titlespacing*{\section}{0pt}{2.5ex plus .2ex minus .2ex}{0.5ex plus 0ex}
+\titlespacing*{\subsection}{0pt}{2.5ex plus .2ex minus .2ex}{0.2ex plus 0ex}
+\titlespacing*{\subsubsection}{0pt}{2.5ex plus .2ex minus .2ex}{0.1ex plus 0ex}
+
+\setlength{\floatsep}{0.7\baselineskip plus 0pt minus 0pt}
+\setlength{\textfloatsep}{0.7\baselineskip plus 0pt minus 0pt}
+\setlength{\intextsep}{0.7\baselineskip plus 0pt minus 0pt}
+
+\addtolength{\skip\footins}{5pt plus 0pt}
+
+\let\@fnsymbol\@arabic
+
+\@addtoreset{footnote}{page}
+\renewcommand{\thefootnote}{\ifcase\value{footnote}\or*\or**\or***\or
+\#\or\#\#\or\#\#\#\fi}
+
+\usepackage{pdflscape}
+
+
+
+
+
+
+\makeatother
+
+\begin{document}
+\begin{landscape}\par 
+\begin{table}[h]
+\caption{COMs and COM precursors transitions covered in our L1517B observations
+and their derived line parameters.}
+
+\begin{tabular}{ccccccccccc}
+\hline 
+ &  &  & \multicolumn{4}{c}{\textbf{Dust peak}} & \multicolumn{4}{c}{\textbf{Methanol peak}}\tabularnewline
+\hline 
+\textbf{Species} & \textbf{Line } & \textbf{Frequency } & \textbf{Area} $^{\mathrm{a}}$  & \textbf{Linewidth}  & \textbf{LSR velocity} $^{\mathrm{b}}$  & \textbf{S/N} $^{\mathrm{c}}$  & \textbf{Area} $^{\mathrm{a}}$  & \textbf{Linewidth}  & \textbf{LSR velocity} $^{\mathrm{b}}$  & \textbf{S/N} $^{\mathrm{c}}$\tabularnewline
+ &  & (MHz)  & (mK km s$^{-1}$)  & (km s$^{-1}$)  & (km s$^{-1}$)  &  & (mK km s$^{-1}$)  & (km s$^{-1}$)  & (km s$^{-1}$)  & \tabularnewline
+\hline 
+CH$_{3}$OH  & $2_{0,2}\rightarrow1_{0,1}$ A  & 96741.371  & 206.1 $\pm$ 1.9  & 0.278 $\pm$ 0.004  & 5.785 $\pm$ 0.002  & 109  & 241.1 $\pm$ 2.0  & 0.277 $\pm$ 0.005  & 5.788 $\pm$ 0.002  & 121 \tabularnewline
+ & $2_{1,2}\rightarrow1_{1,1}$ A  & 95914.310  & < 6  & ...  & ...  & ...  & < 6  & ...  & ...  & ... \tabularnewline
+ & $2_{1,1}\rightarrow1_{1,0}$ A  & 97582.798  & < 2.4  & ...  & ...  & ...  & < 2.4  & ...  & ...  & ... \tabularnewline
+ & $2_{1,2}\rightarrow1_{1,1}$ E  & 96739.358  & 150.4 $\pm$ 1.9  & 0.262 $\pm$ 0.008  & 5.786 $\pm$ 0.003  & 80  & 181.6 $\pm$ 2.0  & 0.262 $\pm$ 0.003  & 5.785 $\pm$ 0.003  & 92\tabularnewline
+ & $2_{0,2}\rightarrow1_{0,1}$ E  & 96744.545  & 9.7 $\pm$ 1.9  & 0.244 $\pm$ 0.012  & 5.84 $\pm$ 0.04  & 5.1  & 11.2 $\pm$ 2.0  & 0.23 $\pm$ 0.08  & 5.78 $\pm$ 0.03  & 5.6\tabularnewline
+ & $2_{1,1}\rightarrow1_{1,0}$ E  & 96755.501  & < 6  & ...  & ...  & ...  & < 6  & ...  & ...  & ... \tabularnewline
+\hline 
+HCCCN  & $9_{}\rightarrow8_{}$  & 81881.461  & 693.6 $\pm$ 1.0  & 0.395 $\pm$ 0.001  & 5.824 $\pm$ 0.001  & 694  & 346.7 $\pm$ 0.9  & 0.383 $\pm$ 0.002  & 5.816 $\pm$ 0.001  & 385 \tabularnewline
+ & $11_{}\rightarrow10_{}$  & 100076.392  & 286.5 $\pm$ 0.7  & 0.318 $\pm$ 0.001  & 5.842 $\pm$ 0.001  & 409  & 96.3 $\pm$ 0.8  & 0.290 $\pm$ 0.003  & 5.837 $\pm$ 0.001  & 120\tabularnewline
+\hline 
+CH$_{3}$CN  & $6_{0}\rightarrow5_{0}$  & 110383.500  & 6.4 $\pm$ 1.9  & 0.13 $\pm$ 0.13  & 5.902 $\pm$ 0.023  & 3.4  & < 6  & ...  & ...  & ... \tabularnewline
+ & $6_{1}\rightarrow5_{1}$  & 110381.372  & 11.8 $\pm$ 1.9  & 0.24 $\pm$ 0.08  & 5.81 $\pm$ 0.03  & 6.2  & < 6  & ...  & ...  & ... \tabularnewline
+ & $6_{2}\rightarrow5_{2}$  & 110374.989  & < 10  & ...  & ...  & ...  & < 6  & ...  & ...  & ... \tabularnewline
+\end{tabular}
+\end{table}
+
+\par \par \par \par \par \end{landscape} 
+\end{document}
