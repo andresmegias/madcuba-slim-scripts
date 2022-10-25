@@ -1,0 +1,16 @@
+molecule,abundance
+CH3OH,4.0 e-10
+CH3O,< 6.7 e-12
+CH3OCHO,8.1+/-7.4 e-11
+CH3OCH3,2.8+/-0.4 e-11
+CH3CHO,2.2 e-11
+t-HCOOH,8.9+/-1.7 e-12
+c-C3H2O,4.2+/-2.3 e-12
+H2CCO,9.3 e-11
+CCCO,1.7+/-0.2 e-11
+HCCCHO,7.5+/-4.5 e-12
+HCCNC,3.1+/-2.5 e-11
+CH2CHCN,2.2+/-1.5 e-11
+CH3NC,5.0 e-13
+CH3CN,2.8+/-0.4 e-12
+HCCCN,1.9+/-0.6 e-9
