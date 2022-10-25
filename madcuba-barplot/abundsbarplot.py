@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-config_file = 'barplot4r.yaml'
+config_file = 'example/barplot3.yaml'
 
 import os
 import re
