@@ -39,8 +39,8 @@ molecules:
 non-LTE molecules:
   CH3OH A:
     column density (/cm2):
-    - 4.705-0.035+0.033 e12
-    - 5.476-0.037+0.036 e12
+    - 4.290+/-0.113 e12
+    - 4.961+/-0.119 e12
     hydrogen number density (/cm3):
     - 2.2e5
     - 1.235e5
@@ -49,28 +49,28 @@ non-LTE molecules:
     - 10
   CH3OH E:
     column density (/cm2):
-    - 4.6-0.66+3.3 e12
-    - 5.62+/-0.30 e12
+    - 4.590-0.246+2.632 e12
+    - 5.615+/-0.201 e12
     hydrogen number density (/cm3):
-    - 5.4-3.9+3.1 e4
-    - 2.05+/-0.29 e5
+    - 5.4-3.8+7.8 e4
+    - 2.05-0.57+0.89 e5
     kinetic temperature (K):
     - 10
     - 10
   HCCCN:
     column density (/cm2):
-    - 5.157+/-0.035 e12
-    - 3.720+/-0.087 e12
+    - 5.161+/-0.047 e12
+    - 3.719-0.127+0.135 e12
     hydrogen number density (/cm3):
-    - 1.80+/-0.04 e5
-    - 5.559-0.178+0.190 e4
+    - 1.797-0.058+0.066 e5
+    - 5.56-0.33+0.36 e4
     kinetic temperature (K):
     - 10
     - 10
   CH3CN:
     column density (/cm2):
-    - 2.12+/-0.29 e11
-    - < 1.427 e11
+    - 2.12-0.75+0.73 e11
+    - < 3.98 e11
     hydrogen number density (/cm3):
     - 2.2e5
     - 1.235e5
