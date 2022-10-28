@@ -55,9 +55,9 @@ species:
     fit color: 'tab:orange'
     title: "*CH3OH* A \n $2_{0,2}$ → $1_{0,1}$"
     lines of the fit:
-        - intensity: '0.6872'
+        - intensity: '0.6299'
           width: '0.283'
-        - intensity: '0.8001'
+        - intensity: '0.7299'
           width: '0.283'
 - CH3OH-E:
     file: '01'
