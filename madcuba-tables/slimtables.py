@@ -749,29 +749,25 @@ if export_abundances_list or create_abundances_table:
             table_temp += [rv.RichValue(temp, temp_unc, domain=[0,np.inf])]
             table_abunds += [table_dens[-1] / reference_dens_s]
             
-            abunds += [table_abunds[-1]]
+            abunds += [copy.copy(table_abunds[-1])]
             abunds_species += [table_species[-1]]
         
         abunds_table = rv.rich_dataframe({'species': table_species,
                                           'temperature': table_temp,
                                           'density': table_dens,
                                           'abundance': table_abunds}, num_sf=1)
-        
         for column in factors_abunds:
             abunds_table[column] /= float(factors_abunds[column])
             abunds_table[column+'_unc'] /= float(factors_abunds[column])
+        abunds_tables += [abunds_table]
 
-    
-        abundances_df = rv.rich_dataframe({'molecule': abunds_species,
-                                           'abundance': abunds}, num_sf=2)
-        
         if export_abundances_list:
-            source = input_madcuba_s.split('-')[0]
+            abundances_df = rv.rich_dataframe({'molecule': abunds_species,
+                                               'abundance': abunds}, num_sf=2)
             abundances_df.to_csv(output_list_s, index=False)
+            source = input_madcuba_s.split('-')[0]
             print('Saved abundances for source {} in {}.'
                   .format(source, output_list_s))
-        
-        abunds_tables += [abunds_table]
         
 if create_abundances_table or create_lines_table:
     
@@ -811,7 +807,7 @@ if create_abundances_table or create_lines_table:
     
         for i,line in enumerate(abunds_table_params):
             abunds_table_params[i][0] = abunds_tables[line[0]-1]
-            
+             
         abunds_table = merge_tables(*abunds_table_params)
         
         for i, row in enumerate(scientific_notation['abundances table']):
