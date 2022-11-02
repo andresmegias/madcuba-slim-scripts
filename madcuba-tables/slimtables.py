@@ -284,7 +284,7 @@ default_config = {
     'export abundances list': False,
     'input files': {
         'MADCUBA table': '',
-        'processing table': '',
+        'spectra table': '',
         'LaTeX template': '',
         'non-LTE lines table': {}
         },
@@ -348,7 +348,7 @@ export_abundances_list = config['export abundances list']
 create_abundances_table = config['create abundances table']
 create_lines_table = config['create lines table']
 input_madcuba = config['input files']['MADCUBA table']
-input_processing = config['input files']['processing table']
+input_spectra = config['input files']['spectra table']
 output_list = config['output files']['abundances list']
 reference_dens = config['reference column density (/cm2)']
 molecule_list = config['molecules']
@@ -401,10 +401,10 @@ if create_lines_table:
                 
         using_table_proc = True if recalculate_areas or saving_rms else False
         if using_table_proc:
-            input_processing_s = \
-                (input_processing[s] if type(input_processing == list)
-                 else input_processing)
-            table_proc = pd.read_csv(input_processing_s)
+            input_spectra_s = \
+                (input_spectra[s] if type(input_spectra == list)
+                 else input_spectra)
+            table_proc = pd.read_csv(input_spectra_s)
         
         false_lines += [{}]
         sigmas_false_lines += [{}]
