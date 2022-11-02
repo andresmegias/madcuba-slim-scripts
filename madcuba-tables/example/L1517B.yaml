@@ -6,9 +6,9 @@ input files:
     MADCUBA table:
     - L1517B-madcuba.csv
     - L1517BOFF1-madcuba.csv
-    processing table:
-    - L1517B-processing.csv
-    - L1517BOFF1-processing.csv
+    spectra table:
+    - L1517B-spectra.csv
+    - L1517BOFF1-spectra.csv
     LaTeX template: tables-template.tex
     non-LTE lines table:
         table-extra.tex: [CH3OH, HCCCN, CH3CN]
@@ -70,7 +70,7 @@ non-LTE molecules:
   CH3CN:
     column density (/cm2):
     - 2.12-0.75+0.73 e11
-    - < 3.98 e11
+    - < 2.00 e11
     hydrogen number density (/cm3):
     - 2.2e5
     - 1.235e5
