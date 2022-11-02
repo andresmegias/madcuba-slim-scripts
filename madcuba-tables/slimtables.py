@@ -199,36 +199,6 @@ def format_transition_numbers(input_numbers):
      
 light_speed = 2.998E5 # km/s
 
-default_config = {
-    'create abundances table': False,
-    'create lines table': False,
-    'export abundances list': False,
-    'input files': {
-        'MADCUBA table': '',
-        'processing table': '',
-        'LaTeX template': '',
-        'non-LTE lines table': {}
-        },
-    'output files': {
-        'abundances list': '',
-        'LaTeX file': 'tables.tex'
-        },
-    'molecules': [],
-    'non-LTE molecules': [],
-    'reference column density (/cm2)': 1,
-    'lines (MHz)': 'auto',
-    'tables scientific notation': {},
-    'lines margin (MHz)': 0.2,
-    'frequency decimals': 3,
-    'S/N threshold': 3,
-    'multiplying factors': {},
-    'recalculate area uncertainty': True,
-    'correct false detections': True
-    }
-default_sections = {
-    'multiplying factors': {
-    'abundances table': {}, 'lines table': {}}
-    }
 default_tables_template = \
 r"""
 \documentclass[10pt,spanish]{article}
@@ -308,6 +278,37 @@ r"""
 \end{document}    
 """
 
+default_config = {
+    'create abundances table': False,
+    'create lines table': False,
+    'export abundances list': False,
+    'input files': {
+        'MADCUBA table': '',
+        'processing table': '',
+        'LaTeX template': '',
+        'non-LTE lines table': {}
+        },
+    'output files': {
+        'abundances list': '',
+        'LaTeX file': 'tables.tex'
+        },
+    'molecules': [],
+    'non-LTE molecules': [],
+    'reference column density (/cm2)': 1,
+    'lines (MHz)': 'auto',
+    'tables scientific notation': {},
+    'lines margin (MHz)': 0.2,
+    'frequency decimals': 3,
+    'S/N threshold': 3,
+    'multiplying factors': {},
+    'recalculate areas with RMS noise': True,
+    'correct false detections': True
+    }
+default_sections = {
+    'multiplying factors': {
+    'abundances table': {}, 'lines table': {}}
+    }
+
 #%%
 
 print()
@@ -359,7 +360,7 @@ sn_threshold = config['S/N threshold']
 factors_abunds = config['multiplying factors']['abundances table']
 factors_lines = config['multiplying factors']['lines table']
 scientific_notation = config['tables scientific notation']
-recalculate_area_unc = config['recalculate area uncertainty']
+recalculate_areas = config['recalculate areas with RMS noise']
 correct_false_detections = config['correct false detections']
 if (len(scientific_notation) !=0 and 'use crosses' in scientific_notation):
     use_crosses = scientific_notation['use crosses']
@@ -379,7 +380,6 @@ else:
 
 false_lines = []
 sigmas_false_lines = []
-
 abunds_tables, lines_tables = [], []
     
 if create_lines_table:
@@ -388,13 +388,9 @@ if create_lines_table:
     
     for s in range(num_sources):
         
-        if type(input_madcuba) == list:
-            input_madcuba_s = input_madcuba[s]
-        else:
-            input_madcuba_s = input_madcuba
-            
+        input_madcuba_s = (input_madcuba[s] if type(input_madcuba) == list
+                           else input_madcuba)
         table_madcuba = pd.read_csv(input_madcuba_s)
-
         source = input_madcuba_s.split('-')[0]
         print('\nSource {}: {}'.format(s+1, source))
 
@@ -402,17 +398,12 @@ if create_lines_table:
         for element in lines_table_params:
             if 'intensity' in element[1]:
                 saving_rms = True
-
-        if recalculate_area_unc or saving_rms:
-            using_table_proc = True
-        else:
-            using_table_proc = False
-
+                
+        using_table_proc = True if recalculate_areas or saving_rms else False
         if using_table_proc:
-            if type(input_processing) == list:
-                input_processing_s = input_processing[s]
-            else:
-                input_processing_s = input_processing
+            input_processing_s = \
+                (input_processing[s] if type(input_processing == list)
+                 else input_processing)
             table_proc = pd.read_csv(input_processing_s)
         
         false_lines += [{}]
@@ -477,9 +468,10 @@ if create_lines_table:
                             if using_table_proc:
                                 rms = combine_rms(spectra['rms noise (mK)'])
                                 resolution = \
-                                    max(light_speed*spectra['resolution (MHz)']/line)
-                            if recalculate_area_unc:
-                                delta_area = rms * np.sqrt(resolution * width)
+                                    max(light_speed*spectra['resolution (MHz)']
+                                        /line)
+                            if recalculate_areas:
+                                delta_area = rms * (resolution * width)**0.5
                             else:
                                 delta_area = 1e3 * row['delta Area']
                             delta_area = float(delta_area)
@@ -523,18 +515,18 @@ if create_lines_table:
                                     max(light_speed*spectra['resolution (MHz)']
                                                  /line)
                             width = copy.copy(row['Width'])
-                            if recalculate_area_unc:
-                                new_area = sn_threshold * rms * \
-                                    np.sqrt(resolution * width)
+                            if recalculate_areas:
+                                new_area = (sn_threshold * rms * 
+                                            np.sqrt(resolution * width))
                             else:
                                 new_area = 1e3 * row['Area']
                             new_intensity = 1e3 * row['Intensity']
-                            factor = sn_threshold - sigmas_false_lines[s][name]
-                            if (name in sigmas_false_lines[s]
-                                    and correct_false_detections
-                                    and not np.isnan(factor)):
-                                new_area += delta_area * factor
-                                new_intensity += delta_intensity * factor
+                            # factor = sn_threshold - sigmas_false_lines[s][name]
+                            # if (name in sigmas_false_lines[s]
+                            #         and correct_false_detections
+                            #         and not np.isnan(factor)):
+                            #     new_area += delta_area * factor
+                            #     new_intensity += delta_intensity * factor
                             area = max(area, new_area)
                             delta_area = -10
                             intensity = max(intensity, new_intensity)
