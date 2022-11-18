@@ -3,7 +3,7 @@
 """
 Abundances Bar Plotter
 ----------------------
-Version 1.2
+Version 1.5
 
 Copyright (C) 2022 - Andrés Megías Toledano
 
@@ -20,20 +20,19 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-config_file = 'example/barplot3.yaml'
+config_file = 'examples/barplot4r2.yaml'
 
 import os
 import re
 import sys
 import copy
+import math
 import itertools
 import yaml
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import richvalues as rv
-
-plt.rcParams.update({'font.size': 12})
 
 def bibarplot(x, y1, y2, color1, color2, width, point_spacing=0.1):
     """
@@ -181,28 +180,6 @@ def format_species_name(input_name, simplify_numbers=True):
             output_name = output_name.replace('{'+number+'}', number)
     return output_name
 
-
-def cosine_similarity(u, v):
-    """
-    Compute the cosine similarity between the input detection vectors.
-
-    Parameters
-    ----------
-    u,v : list / array
-        Input vectors, each for one different source. For each molecule and
-        position, the value is 1 if the species is detected and 0 otherwise.
-
-    Returns
-    -------
-    d : float
-        Resulting value, ranging from 0 to 1. If 1, the input vectors are
-        identical. If 0, they are completely different.
-    """
-    if len(u) != len(v):
-        raise Exception('Input vectors should have the same length.')
-    d = np.dot(u, v) / (np.dot(u, u)**0.5 * np.dot(v, v)**0.5)
-    return d
-
 def count_atoms(molecule, atoms=['H', 'D', 'C', 'O', 'N', 'S', 'P']):
     """
     Count the number of atoms in the given molecule.
@@ -253,6 +230,184 @@ def molecular_mass(molecule):
         molec_mass += num_atoms[atom] * molecular_masses[atom]
     return molec_mass
 
+def fractional_similarity(u, v):
+    """
+    Compute the fractional similarity between the input detection vectors.
+
+    Parameters
+    ----------
+    u,v : list / array
+        Input vectors, each for a different source. For each molecule and
+        position, the value is 1 if the species is detected and 0 otherwise.
+
+    Returns
+    -------
+    fs : rich value
+        Resulting value, ranging from 0 to 1. If 1, the input vectors are
+        identical. If 0, they are completely different.
+    """
+    if len(u) != len(v):
+        raise Exception('Input vectors should have the same length.')
+    s = (np.array(u) == np.array(v)).sum() / len(u)
+    s_ = np.array([])
+    for i in [0,1]:
+        for j in range(len(u)):
+            uv = (copy.copy(u), copy.copy(v))
+            uv[i][j] = int(not bool(uv[i][j]))
+            uij, vij = uv[0], uv[1]
+            sij = (np.array(uij) == np.array(vij)).sum() / len(u)
+            s_ = np.append(s_, sij)
+    uncs = [np.mean(s - s_[s_<s]), np.mean(s_[s_>s] - s)]
+    s = rv.RichValue(s, uncs, domain=[0,1], num_sf=2)
+    return s
+
+def cosine_similarity(u, v):
+    """
+    Compute the cosine similarity between the input arrays.
+
+    Parameters
+    ----------
+    u,v : list / array
+        Input vectors, each for a different source, containing the abundances
+        of different molecules.
+
+    Returns
+    -------
+    s : rich value
+        Resulting value, ranging from 0 to 1. If 1, the input vectors are
+        identical. If 0, they are completely different.
+    """
+    if len(u) != len(v):
+        raise Exception('Input vectors should have the same length.')
+    s = np.dot(u,v) / (np.dot(u,u)**0.5 * np.dot(v,v)**0.5)
+    s = min(1,s)
+    s_ = np.array([])
+    for j in [0,1]:
+        for k in range(len(u)):
+            uv = (copy.copy(u), copy.copy(v))
+            uv[j][k] = int(not bool(uv[j][k]))
+            ui, vi = uv[0], uv[1]
+            si = np.dot(ui,vi) / (np.dot(ui,ui)**0.5 * np.dot(vi,vi)**0.5)
+            s_ = np.append(s_, si)
+    s_1 = s - s_[s_<s]
+    s_2 = s_[s_>s] - s
+    s_1 = [0] if len(s_1) == 0 else s_1
+    s_2 = [0] if len(s_2) == 0 else s_2
+    uncs = [np.mean(s_1), np.mean(s_2)]
+    s = rv.RichValue(s, uncs, domain=[0,1], num_sf=2)
+    return s
+
+def angular_similarity(u, v):
+    """
+    Compute the angular similarity between the input arrays.
+
+    Parameters
+    ----------
+    u,v : list / array
+        Input vectors, each for a different source, containing the abundances
+        of different molecules.
+
+    Returns
+    -------
+    s : rich value
+        Resulting value, ranging from 0 to 1. If 1, the input vectors are
+        identical. If 0, they are completely different.
+    """
+    if len(u) != len(v):
+        raise Exception('Input vectors should have the same length.')
+    s = np.dot(u,v) / (np.dot(u,u)**0.5 * np.dot(v,v)**0.5)
+    s = min(1,s)
+    s = 1 - np.arccos(s) / (math.tau/4)
+    s_ = np.array([])
+    for j in [0,1]:
+        for k in range(len(u)):
+            uv = (copy.copy(u), copy.copy(v))
+            uv[j][k] = int(not bool(uv[j][k]))
+            ui, vi = uv[0], uv[1]
+            si = np.dot(ui,vi) / (np.dot(ui,ui)**0.5 * np.dot(vi,vi)**0.5)
+            si = 1 - np.arccos(si) / (math.tau/4)
+            s_ = np.append(s_, si)
+    s_1 = s - s_[s_<s]
+    s_2 = s_[s_>s] - s
+    s_1 = [0] if len(s_1) == 0 else s_1
+    s_2 = [0] if len(s_2) == 0 else s_2
+    uncs = [np.mean(s_1), np.mean(s_2)]
+    s = rv.RichValue(s, uncs, domain=[0,1], num_sf=2)
+    return s
+
+def rich_cosine_similarity(u, v):
+    """
+    Compute the cosine similarity between the input rich arrays.
+
+    Parameters
+    ----------
+    u,v : list / array
+        Input vectors, each for a different source, containing the abundances
+        of different molecules.
+
+    Returns
+    -------
+    s : rich value
+        Resulting value, ranging from 0 to 1. If 1, the input vectors are
+        identical. If 0, they are completely different.
+    """
+    if len(u) != len(v):
+        raise Exception('Input vectors should have the same length.')
+    def function(*args):
+        L = len(args) // 2
+        u, v = args[:L], args[L:]
+        y, u2, v2 = 0, 0, 0
+        for ui,vi in zip(u,v):
+            y += ui*vi
+            u2 += ui**2
+            v2 += vi**2
+        y /= (u2 * v2)**0.5
+        return y
+    s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1], num_sf=2)
+    ub = (~u.are_uplims).astype(int)
+    vb = (~v.are_uplims).astype(int)
+    ref_uncs = cosine_similarity(ub, vb).unc
+    s.unc[0] = max(ref_uncs[0], s.unc[0])
+    s.unc[1] = max(ref_uncs[1], s.unc[1])
+    return s
+
+def rich_angular_similarity(u, v):
+    """
+    Compute the angular similarity between the input rich arrays.
+
+    Parameters
+    ----------
+    u,v : list / array
+        Input vectors, each for a different source, containing the abundances
+        of different molecules.
+
+    Returns
+    -------
+    s : rich value
+        Resulting value, ranging from 0 to 1. If 1, the input vectors are
+        identical. If 0, they are completely different.
+    """
+    if len(u) != len(v):
+        raise Exception('Input vectors should have the same length.')
+    def function(*args):
+        L = len(args) // 2
+        u, v = args[:L], args[L:]
+        y, u2, v2 = 0, 0, 0
+        for ui,vi in zip(u,v):
+            y += ui*vi
+            u2 += ui**2
+            v2 += vi**2
+        y /= (u2 * v2)**0.5
+        y = 1 - 4/math.tau * np.arccos(y)
+        return y
+    s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1], num_sf=2)
+    ub = (~u.are_uplims).astype(int)
+    vb = (~v.are_uplims).astype(int)
+    ref_uncs = angular_similarity(ub, vb).unc
+    s.unc[0] = max(ref_uncs[0], s.unc[0])
+    s.unc[1] = max(ref_uncs[1], s.unc[1])
+    return s
+
 
 #%%
 
@@ -268,10 +423,11 @@ default_options = {
     'legend position': [],
     'legend font size': None,
     'inferior limit': None,
-    'compute cosine similarity': False,
+    'similarity type': 'fractional',
+    'compute similarity': False,
     'compute mean abundance': False,
     'compute mean molecular mass': False,
-    'use upper limits for calculations': True
+    'use upper limits for means': True
     }
 
 # Configuration file.
@@ -298,18 +454,25 @@ font_size = config['font size']
 legend_position = tuple(config['legend position'])
 legend_font_size = config['legend font size']
 inferior_limit = float(config['inferior limit'])
-compute_cosine_similarity = config['compute cosine distance']
+similarity_type = config['similarity type']
+compute_similarity = config['compute similarity']
 compute_mean_mol_mass = config['compute mean molecular mass']
 compute_mean_abund = config['compute mean abundance']
-consider_uplims = config['use upper limits for calculations']
+use_uplims = config['use upper limits for calculations']
+
+if similarity_type not in ('fractional', 'cosine', 'angular',
+                           'discretized cosine', 'discretized angular'):
+    raise Exception("Wrong similarity type. It can be 'fractional', 'cosine',"
+                    + " 'angular', 'discretized cosine' or 'discretized angular'.")
 
 # Font sizes.
-legend_font_size = (0.9*font_size if type(legend_font_size) is None
-                   else legend_font_size)
+legend_font_size = (0.9*font_size if legend_font_size is None
+                    else legend_font_size)
 plt.rcParams.update({'font.size': font_size})
 
 #%%
 
+plt.close('all')
 print()
 print('Abundances Bar Plotter')
 print('----------------------')
@@ -390,13 +553,12 @@ point_spacing *= width/2
 # Bar plots.
 for i,entry in enumerate(input_files):
     if len(entry) == 2:
-        bibarplot(x+off+i*width, y_a[i], y_b[i],
-                  color_a[i], color_b[i], width=width,
-                  point_spacing=point_spacing)
+        bibarplot(x+off+i*width, y_a[i], y_b[i], color_a[i], color_b[i],
+                  width=width, point_spacing=point_spacing)
         alpha_b = 1
     else:
-        bibarplot(x+off+i*width, y_a[i], '', color_a[i], '',
-                  width=width, point_spacing=0)
+        bibarplot(x+off+i*width, y_a[i], '', color_a[i], '', width=width,
+                  point_spacing=0)
         alpha_b = 0
     title = list(entry.keys())[0].split('-')[0]
     plt.plot([], [], alpha=0, label=title+':')
@@ -408,6 +570,7 @@ plt.legend(ncol=n, loc='upper center', bbox_to_anchor=legend_position,
 plt.yscale('log')
 plt.xlim([-off, N+off])
 plt.ylim(bottom=inferior_limit)
+plt.gca().yaxis.set_ticks_position('both')
 plt.xticks(ticks=x+0.52, labels=labels, rotation=90)
 plt.tick_params(axis='x', which='both', bottom=False)
 plt.ylabel('abundance relative to H$_2$')
@@ -417,38 +580,78 @@ plt.tight_layout()
 plt.savefig(output_file)
 print('\nSaved figure in {}.'.format(output_file))
 
-# Cosine similarity.
+# Similarity.
+if similarity_type == 'fractional':
+    similarity_function = fractional_similarity
+elif similarity_type == 'discretized cosine':
+    similarity_function = cosine_similarity
+elif similarity_type == 'discretized angular':
+    similarity_function = angular_similarity
+elif similarity_type == 'cosine':
+    similarity_function = rich_cosine_similarity
+elif similarity_type == 'angular':
+    similarity_function = rich_angular_similarity
 if set(name_b) != {' '}:
     names = np.array([name_a, name_b])
     positions = set(names[:,0])
     for i in range(len(name_a)-1):
         positions &= set(names[:,i+1])
-    positions = list(positions)
+    common_positions = list(positions)
 else:
-    positions = list(set(name_a))
+    common_positions = list(set(name_a))
 if ' ' in name_a and ' ' in name_b:
-    compute_cosine_similarity = False
-cosine_similarity_params = list(itertools.combinations(sources, 2))
-if compute_cosine_similarity:
+    compute_similarity = False
+similarity_params = list(itertools.combinations(sources, 2))
+if compute_similarity:
     vectors = {}
     for source in abunds:
         vectors[source] = []
-        for position in positions:
-            for abund in abunds[source][position]:
-                value = 1 if not abund.is_uplim else 0
-                vectors[source] += [value]
-        vectors[source] = np.array(vectors[source])
+        if similarity_type in ('fractional',
+                               'discretized cosine', 'discretized angular'):
+            positions = list(abunds[source].keys())
+            if len(positions) == 2 and len(common_positions) == 2:
+                for position in positions:
+                    for abund in abunds[source][position]:
+                        value = 1 if not abund.is_uplim else 0
+                        value = np.nan if np.isnan(abund.center) else value
+                        vectors[source] += [value]
+            else:
+                for abund1, abund2 in zip(abunds[source][positions[0]],
+                                          abunds[source][positions[1]]):
+                    value = (1 if not (abund1.is_uplim and abund2.is_uplim)
+                             else 0)
+                    value = (np.nan if all(np.isnan([abund1.center, abund2.center]))
+                             else value)
+                    vectors[source] += [value]
+        else:
+            for position in common_positions:
+                vectors[source] += [*abunds[source][position].function(np.log)]
+        vectors[source] = (np.array(vectors[source]) if similarity_type in
+                           ('fractional', 'discretized cosine', 'discretized angular')
+                           else rv.rich_array(vectors[source]))
     cosine_similarities = {}
-    for param in cosine_similarity_params:
+    use_uplims_for_similarity = \
+        (True if similarity_type in ('fractional', 'discretized cosine',
+                                     'discretized angular') else use_uplims)
+    for param in similarity_params:
         name1, name2 = param
-        if len(vectors[name1]) != 0:
-            cos_sim = \
-                rv.RichValue(cosine_similarity(vectors[name1], vectors[name2]),
-                             unc=1/len(vectors[name1]), num_sf=2)
+        num_entries = len(vectors[name1])
+        if num_entries != 0:
+            cond = (np.ones(num_entries, bool) if use_uplims_for_similarity
+                    else ~vectors[name1].are_uplims)
+            cond *= [np.isfinite(rv.rich_value(entry).center)
+                     for entry in vectors[name1]]
+            cond = (cond * np.ones(num_entries, bool)
+                    if use_uplims_for_similarity
+                    else cond * ~vectors[name2].are_uplims)
+            cond *= [np.isfinite(rv.rich_value(entry).center)
+                     for entry in vectors[name2]]
+            cos_sim = similarity_function(vectors[name1][cond],
+                                          vectors[name2][cond])
         else:
             cos_sim = None
         cosine_similarities['{}-{}'.format(name1, name2)] = cos_sim
-    print('\nCosine similarity.')
+    print('\n{} similarity.'.format(similarity_type.capitalize()))
     for group in cosine_similarities:
         print('- {}: {}'.format(group, cosine_similarities[group]))
 
@@ -462,16 +665,10 @@ if compute_mean_abund:
     for source in abunds:
         mean_abunds[source] = {}
         for position in abunds[source]:
-            cond = (np.ones(len(molecules), bool) if consider_uplims
+            cond = (np.ones(len(molecules), bool) if use_uplims
                     else ~ abunds[source][position].are_uplims)
             cond *= [np.isfinite(abund.center)
                      for abund in abunds[source][position]]
-            # for i, abund in enumerate(abunds[source][position]):
-            #     if abund.is_uplim:
-            #         abunds[source][position][i].is_uplim = False
-            #         abunds[source][position][i].is_range = False
-            #         abunds[source][position][i].unc = [0, 0]
-            #         # abunds[source][position][i].center = 1e-13
             mean_abund_i = \
                 rv.rich_fmean(abunds[source][position][cond],
                               function=np.log, inverse_function=np.exp,
@@ -500,7 +697,7 @@ if compute_mean_mol_mass:
         mean_mol_masses[source] = {}
         for position in abunds[source]:
             weights = abunds[source][position]
-            cond = (np.ones(len(molecules), bool) if consider_uplims
+            cond = (np.ones(len(molecules), bool) if use_uplims
                     else ~ abunds[source][position].are_uplims)
             cond *= [np.isfinite(abund.center)
                      for abund in abunds[source][position]]
@@ -530,3 +727,5 @@ if compute_mean_mol_mass:
 
 print()
 plt.show()
+
+plt.rcParams['font.size'] = plt.rcParamsDefault['font.size']
