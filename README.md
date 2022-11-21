@@ -5,6 +5,6 @@ Bundle of Python 3 scripts to process and plot the data obtained with the tool S
 * SLIM Lines Plotter, `slimlinesplot.py`.
 * Abundances Bar Plotter, `abundsbarplot.py`.
 
-Each of them has a user guide that you can check to learn how to use them.
+Each of them has a user guide that you can check to learn how to use them. There are also example files for each script, located in the `example` folders.
 
 MADCUBA website: https://cab.inta-csic.es/madcuba/
