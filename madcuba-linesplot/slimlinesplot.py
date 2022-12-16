@@ -1016,8 +1016,10 @@ for f,folder in enumerate(folders):
                         x = np.array([x0, xl])
                         y = np.array([ynode, ymax]) * yrange
                         axes[i].plot(x, y, color=gray, lw=0.9*lw, ls='--',
-                                     alpha=0.7)    
+                                     alpha=0.7)
+            _, ymax = axes[i].get_ylim()
             axes[i].margins(y=0)
+            axes[i].set_ylim(top=ymax)
             
     if not join_subplots:
         plt.tight_layout()
