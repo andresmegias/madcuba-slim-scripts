@@ -266,7 +266,6 @@ def format_species_name(input_name, simplify_numbers=True):
                 upperscript = ''
                 in_upperscript, possible_upperscript = False, False
                 inds = []
-    output_name = output_name.replace('^$_', '$^').replace('$$', '')
     if output_name.endswith('+') or output_name.endswith('-'):
         symbol = output_name[-1]
         output_name = output_name.replace(symbol, '$^{'+symbol+'}$')
@@ -290,6 +289,7 @@ def format_species_name(input_name, simplify_numbers=True):
         if i+1 == len(original_name) and len(subscript) > 0:
             output_name += '$_{' + subscript + '}$'
         prev_char = char
+    output_name = output_name.replace('^$_', '$^').replace('$$', '')
     # vibrational numbers
     output_name = output_name.replace(',vt', ', vt')
     output_name = output_name.replace(', vt=', '$, v_t=$')
@@ -485,6 +485,7 @@ default_options = {
     'fit line width': None,
     'rows': 1,
     'columns': 1,
+    'title height': 0.92,
     'subplot titles height': 0.90,
     'ticks direction': 'in',
     'use frequencies': False,
@@ -537,14 +538,14 @@ config = {**default_options, **config_or}
 figure_size = config['figure size']
 font_size = config['font size']
 label_font_size = config['label font size']
-label_font_size = (0.8*font_size if type(label_font_size) is None
-                   else label_font_size)
+label_font_size = 0.9*font_size if label_font_size is None else label_font_size
 frame_width = config['frame width']
 line_width = config['plot line width']
 fit_line_width = config['fit line width']
 fit_line_width = line_width if type(fit_line_width) is None else fit_line_width
 num_rows = config['rows']
 num_cols = config['columns']
+title_height = config['title height']
 subtitles_height = config['subplot titles height']
 join_subplots = config['join subplots']
 ticks_direction = config['ticks direction']
@@ -863,8 +864,7 @@ for f,folder in enumerate(folders):
                       horizontalalignment='left', verticalalignment='top')
 
     fig.align_ylabels()
-    y_st = 0.93 if join_subplots else 0.98
-    plt.suptitle(figure_titles[f], fontweight='semibold', y=y_st)
+    plt.suptitle(figure_titles[f], fontweight='semibold', y=title_height)
     
     # Limits and axis.
     
@@ -1016,7 +1016,7 @@ for f,folder in enumerate(folders):
                         x = np.array([x0, xl])
                         y = np.array([ynode, ymax]) * yrange
                         axes[i].plot(x, y, color=gray, lw=0.9*lw, ls='--',
-                                     alpha=0.7)
+                                     alpha=0.7)    
             _, ymax = axes[i].get_ylim()
             axes[i].margins(y=0)
             axes[i].set_ylim(top=ymax)
