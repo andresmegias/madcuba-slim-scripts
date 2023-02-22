@@ -3,7 +3,7 @@
 """
 MADCUBA Table Generator
 -----------------------
-Version 1.7
+Version 1.8
 
 Copyright (C) 2022 - Andrés Megías Toledano
 
@@ -118,7 +118,6 @@ def format_species_name(input_name, simplify_numbers=True):
                 upperscript = ''
                 in_upperscript, possible_upperscript = False, False
                 inds = []
-    output_name = output_name.replace('^$_', '$^').replace('$$', '')
     if output_name.endswith('+') or output_name.endswith('-'):
         symbol = output_name[-1]
         output_name = output_name.replace(symbol, '$^{'+symbol+'}$')
@@ -142,6 +141,7 @@ def format_species_name(input_name, simplify_numbers=True):
         if i+1 == len(original_name) and len(subscript) > 0:
             output_name += '$_{' + subscript + '}$'
         prev_char = char
+    output_name = output_name.replace('^$_', '$^').replace('$$', '')
     # vibrational numbers
     output_name = output_name.replace(',vt', ', vt')
     output_name = output_name.replace(', vt=', '$, v_t=$')
@@ -588,14 +588,12 @@ if export_abundances_list or create_abundances_table:
         table_madcuba = pd.read_csv(input_madcuba_s)    
     
         if saving_abundance:
-            if type(output_list) == list:
-                output_list_s = output_list[s]
-            else:
-                output_list_s = output_list
-            if type(reference_dens) == list:
-                reference_dens_s = rv.rich_value(reference_dens[s], num_sf=1)
-            else:
-                reference_dens_s = rv.rich_value(reference_dens, num_sf=1)
+            output_list_s = (output_list[s] if type(output_list) == list
+                             else output_list)
+            reference_dens_s = (reference_dens[s]
+                           if type(reference_dens) == list else reference_dens)
+            reference_dens_s = rv.rich_value(reference_dens_s)
+            reference_dens_s.num_sf = 1
         else:
             reference_dens_s = rv.RichValue(1.)
         reference_dens_s.domain = [0., np.inf]
@@ -650,11 +648,11 @@ if export_abundances_list or create_abundances_table:
                         if type(text_dens) is not type(None):
                             dens = rv.rich_value(text_dens)
                             dens_unc = [-10]*2 if dens.is_uplim else dens.unc
-                            dens = dens.center
+                            dens = dens.main
                         if type(text_temp) is not type(None):
                             temp = rv.rich_value(text_temp)
                             temp_unc = [-10]*2 if temp.is_uplim else temp.unc
-                            temp = temp.center
+                            temp = temp.main
                 
             elif len(molecule) > 1:
                 
@@ -702,12 +700,12 @@ if export_abundances_list or create_abundances_table:
                                 dens_var = rv.rich_value(text_dens)
                                 dens_var_unc = ([-10]*2 if dens_var.is_uplim
                                                 else dens_var.unc)
-                                dens_var = dens_var.center
+                                dens_var = dens_var.main
                             if type(text_temp) is not type(None):
                                 temp_var = rv.rich_value(text_temp)
                                 temp_var_unc = ([-10]*2 if temp_var.is_uplim
                                                 else temp_var.unc)
-                                temp_var = temp_var.center
+                                temp_var = temp_var.main
                       
                     if temp_var_unc[0] < 0:
                         temp_var_unc = [0., 0.]
@@ -747,7 +745,8 @@ if export_abundances_list or create_abundances_table:
         abunds_table = rv.rich_dataframe({'species': table_species,
                                           'temperature': table_temp,
                                           'density': table_dens,
-                                          'abundance': table_abunds}, num_sf=1)
+                                          'abundance': table_abunds})
+        abunds_table.set_params({'num_sf': 1})
         for column in factors_abunds:
             abunds_table[column] /= float(factors_abunds[column])
             abunds_table[column+'_unc'] /= float(factors_abunds[column])
@@ -755,7 +754,8 @@ if export_abundances_list or create_abundances_table:
 
         if export_abundances_list:
             abundances_df = rv.rich_dataframe({'molecule': abunds_species,
-                                               'abundance': abunds}, num_sf=2)
+                                               'abundance': abunds})
+            abundances_df.set_params({'num_sf': 2})
             abundances_df.to_csv(output_list_s, index=False)
             source = input_madcuba_s.split('-')[0]
             print('Saved abundances for source {} in {}.'
@@ -799,7 +799,7 @@ if create_abundances_table or create_lines_table:
     
         for i,line in enumerate(abunds_table_params):
             abunds_table_params[i][0] = abunds_tables[line[0]-1]
-             
+
         abunds_table = merge_tables(*abunds_table_params)
         
         for i, row in enumerate(scientific_notation['abundances table']):
