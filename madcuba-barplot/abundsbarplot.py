@@ -3,9 +3,9 @@
 """
 Abundances Bar Plotter
 ----------------------
-Version 1.5
+Version 1.6
 
-Copyright (C) 2022 - Andrés Megías Toledano
+Copyright (C) 2023 - Andrés Megías Toledano
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-config_file = 'examples/barplot4r2.yaml'
+config_file = 'examples/barplot3.yaml'
 
 import os
 import re
@@ -63,7 +63,7 @@ def bibarplot(x, y1, y2, color1, color2, width, point_spacing=0.1):
     for i in range(len(y1)):
         xi = x[i] + width/2
         if len(y2) > 0:
-            if y1[i].center > y2[i].center:
+            if y1[i].main > y2[i].main:
                 y1i, y2i = y1[i], y2[i]
                 c1, c2 = color1, color2
             else:
@@ -77,22 +77,20 @@ def bibarplot(x, y1, y2, color1, color2, width, point_spacing=0.1):
             y1i.set_lims_factor(2)
         else:
             hatch1 = ''
-        plt.bar(xi, y1i.center, color=c1, edgecolor='black', width=width,
+        plt.bar(xi, y1i.main, color=c1, edgecolor='black', width=width,
                 align='center', lw=1, hatch=hatch1)
-        plt.errorbar(xi-xm, y1i.center, np.array(y1i.unc).reshape(2,-1),
-                     uplims=y1i.is_uplim, fmt='.', capsize=2, capthick=1,
-                     ms=3, lw=1, color='k')
+        plt.errorbar(xi-xm, y1i.main, y1i.unc_eb(), uplims=y1i.is_uplim,
+                     fmt='.', capsize=2, capthick=1, ms=3, lw=1, color='k')
         if len(y2) > 0:
             if y2i.is_uplim:
                 hatch2 = '/'
                 y2i.set_lims_factor(2)
             else:
                 hatch2 = ''
-            plt.bar(xi, y2i.center, color=c2, edgecolor='black', width=width,
+            plt.bar(xi, y2i.main, color=c2, edgecolor='black', width=width,
                     align='center', lw=1, hatch=hatch2)
-            plt.errorbar(xi+xm, y2i.center, np.array(y2i.unc).reshape(2,-1),
-                         uplims=y2i.is_uplim, fmt='.', capsize=2, capthick=1,
-                         ms=3, lw=1, color='k')
+            plt.errorbar(xi+xm, y2i.main, y2i.unc_eb(), uplims=y2i.is_uplim,
+                         fmt='.', capsize=2, capthick=1, ms=3, lw=1, color='k')
 
 def format_species_name(input_name, simplify_numbers=True):
     """
@@ -139,7 +137,6 @@ def format_species_name(input_name, simplify_numbers=True):
                 upperscript = ''
                 in_upperscript, possible_upperscript = False, False
                 inds = []
-    output_name = output_name.replace('^$_', '$^').replace('$$', '')
     if output_name.endswith('+') or output_name.endswith('-'):
         symbol = output_name[-1]
         output_name = output_name.replace(symbol, '$^{'+symbol+'}$')
@@ -163,6 +160,7 @@ def format_species_name(input_name, simplify_numbers=True):
         if i+1 == len(original_name) and len(subscript) > 0:
             output_name += '$_{' + subscript + '}$'
         prev_char = char
+    output_name = output_name.replace('^$_', '$^').replace('$$', '')
     # vibrational numbers
     output_name = output_name.replace(',vt', ', vt')
     output_name = output_name.replace(', vt=', '$, v_t=$')
@@ -258,7 +256,8 @@ def fractional_similarity(u, v):
             sij = (np.array(uij) == np.array(vij)).sum() / len(u)
             s_ = np.append(s_, sij)
     uncs = [np.mean(s - s_[s_<s]), np.mean(s_[s_>s] - s)]
-    s = rv.RichValue(s, uncs, domain=[0,1], num_sf=2)
+    s = rv.RichValue(s, uncs, domain=[0,1])
+    s.num_sf = 2
     return s
 
 def cosine_similarity(u, v):
@@ -294,7 +293,8 @@ def cosine_similarity(u, v):
     s_1 = [0] if len(s_1) == 0 else s_1
     s_2 = [0] if len(s_2) == 0 else s_2
     uncs = [np.mean(s_1), np.mean(s_2)]
-    s = rv.RichValue(s, uncs, domain=[0,1], num_sf=2)
+    s = rv.RichValue(s, uncs, domain=[0,1])
+    s.num_sf = 2
     return s
 
 def angular_similarity(u, v):
@@ -332,7 +332,8 @@ def angular_similarity(u, v):
     s_1 = [0] if len(s_1) == 0 else s_1
     s_2 = [0] if len(s_2) == 0 else s_2
     uncs = [np.mean(s_1), np.mean(s_2)]
-    s = rv.RichValue(s, uncs, domain=[0,1], num_sf=2)
+    s = rv.RichValue(s, uncs, domain=[0,1])
+    s.num_sf = 2
     return s
 
 def rich_cosine_similarity(u, v):
@@ -363,9 +364,10 @@ def rich_cosine_similarity(u, v):
             v2 += vi**2
         y /= (u2 * v2)**0.5
         return y
-    s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1], num_sf=2)
-    ub = (~u.are_uplims).astype(int)
-    vb = (~v.are_uplims).astype(int)
+    s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1])
+    s.num_sf = 2
+    ub = (~u.are_uplims()).astype(int)
+    vb = (~v.are_uplims()).astype(int)
     ref_uncs = cosine_similarity(ub, vb).unc
     s.unc[0] = max(ref_uncs[0], s.unc[0])
     s.unc[1] = max(ref_uncs[1], s.unc[1])
@@ -400,9 +402,10 @@ def rich_angular_similarity(u, v):
         y /= (u2 * v2)**0.5
         y = 1 - 4/math.tau * np.arccos(y)
         return y
-    s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1], num_sf=2)
-    ub = (~u.are_uplims).astype(int)
-    vb = (~v.are_uplims).astype(int)
+    s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1])
+    s.num_sf = 2
+    ub = (~u.are_uplims()).astype(int)
+    vb = (~v.are_uplims()).astype(int)
     ref_uncs = angular_similarity(ub, vb).unc
     s.unc[0] = max(ref_uncs[0], s.unc[0])
     s.unc[1] = max(ref_uncs[1], s.unc[1])
@@ -462,8 +465,8 @@ use_uplims = config['use upper limits for calculations']
 
 if similarity_type not in ('fractional', 'cosine', 'angular',
                            'discretized cosine', 'discretized angular'):
-    raise Exception("Wrong similarity type. It can be 'fractional', 'cosine',"
-                    + " 'angular', 'discretized cosine' or 'discretized angular'.")
+    raise Exception("Wrong similarity type. It can be 'fractional', 'cosine', "
+                    + "'angular', 'discretized cosine' or 'discretized angular'.")
 
 # Font sizes.
 legend_font_size = (0.9*font_size if legend_font_size is None
@@ -492,12 +495,14 @@ for entry in input_files:
     color_a += [entry[file_a]['color']]
     name_a += [entry[file_a]['name']]
     data_a = pd.read_csv(file_a, comment='#')
-    y_a += [rv.rich_array(data_a['abundance'], domain=[0,np.inf], num_sf=1)]
+    rarr = rv.rich_array(data_a['abundance'], domain=[0,np.inf])
+    rarr.num_sf = 1
+    y_a += [rarr]
     labels_a += [data_a['molecule'].values]
     source = file_a.replace('.csv','').split('-')[0]
     sources += [source]
     abunds[source] = {}
-    abunds[source][name_a[-1]] = rv.rich_array(y_a[-1], num_sf=1)
+    abunds[source][name_a[-1]] = rarr
     if len(entry) == 1:
         y_b += [[]]
         color_b += ['tab:gray']
@@ -507,10 +512,11 @@ for entry in input_files:
         color_b += [entry[file_b]['color']]
         name_b += [entry[file_b]['name']]
         data_b = pd.read_csv(file_b, comment='#')
-        y_b += [rv.rich_array(data_b['abundance'].values, domain=[0,np.inf],
-                              num_sf=1)]
+        rarr = rv.rich_array(data_b['abundance'].values, domain=[0,np.inf])
+        rarr.num_sf = 1
+        y_b += [rarr]
         labels_b += [data_b['molecule'].values]
-        abunds[source][name_b[-1]] = rv.rich_array(y_b[-1], num_sf=1)
+        abunds[source][name_b[-1]] = rarr
     else:
         raise Exception('Error: The number of sources should be 1 or 2.')
        
@@ -613,22 +619,22 @@ if compute_similarity:
                 for position in positions:
                     for abund in abunds[source][position]:
                         value = 1 if not abund.is_uplim else 0
-                        value = np.nan if np.isnan(abund.center) else value
+                        value = np.nan if np.isnan(abund.main) else value
                         vectors[source] += [value]
             else:
                 for abund1, abund2 in zip(abunds[source][positions[0]],
                                           abunds[source][positions[1]]):
                     value = (1 if not (abund1.is_uplim and abund2.is_uplim)
                              else 0)
-                    value = (np.nan if all(np.isnan([abund1.center, abund2.center]))
+                    value = (np.nan if all(np.isnan([abund1.main, abund2.main]))
                              else value)
                     vectors[source] += [value]
         else:
             for position in common_positions:
                 vectors[source] += [*abunds[source][position].function(np.log)]
         vectors[source] = (np.array(vectors[source]) if similarity_type in
-                           ('fractional', 'discretized cosine', 'discretized angular')
-                           else rv.rich_array(vectors[source]))
+                    ('fractional', 'discretized cosine', 'discretized angular')
+                    else rv.rich_array(vectors[source]))
     cosine_similarities = {}
     use_uplims_for_similarity = \
         (True if similarity_type in ('fractional', 'discretized cosine',
@@ -638,13 +644,13 @@ if compute_similarity:
         num_entries = len(vectors[name1])
         if num_entries != 0:
             cond = (np.ones(num_entries, bool) if use_uplims_for_similarity
-                    else ~vectors[name1].are_uplims)
-            cond *= [np.isfinite(rv.rich_value(entry).center)
+                    else ~vectors[name1].are_uplims())
+            cond *= [np.isfinite(rv.rich_value(entry).main)
                      for entry in vectors[name1]]
             cond = (cond * np.ones(num_entries, bool)
                     if use_uplims_for_similarity
-                    else cond * ~vectors[name2].are_uplims)
-            cond *= [np.isfinite(rv.rich_value(entry).center)
+                    else cond * ~vectors[name2].are_uplims())
+            cond *= [np.isfinite(rv.rich_value(entry).main)
                      for entry in vectors[name2]]
             cos_sim = similarity_function(vectors[name1][cond],
                                           vectors[name2][cond])
@@ -666,21 +672,19 @@ if compute_mean_abund:
         mean_abunds[source] = {}
         for position in abunds[source]:
             cond = (np.ones(len(molecules), bool) if use_uplims
-                    else ~ abunds[source][position].are_uplims)
-            cond *= [np.isfinite(abund.center)
+                    else ~ abunds[source][position].are_uplims())
+            cond *= [np.isfinite(abund.main)
                      for abund in abunds[source][position]]
-            mean_abund_i = \
-                rv.rich_fmean(abunds[source][position][cond],
-                              function=np.log, inverse_function=np.exp,
-                              weights=molecular_masses[cond],
-                              domain=[0,np.inf], num_sf=1)
+            mean_abund_i = rv.rich_fmean(abunds[source][position][cond],
+                             function=np.log, inverse_function=np.exp,
+                             weights=molecular_masses[cond], domain=[0,np.inf],
+                             consider_ranges=False)
             mean_abunds[source][position] = mean_abund_i
     print('\nMean abundance.')
     for source in mean_abunds:
         mean_abund_source = []
         for position in mean_abunds[source]:
             mean_abund_i = mean_abunds[source][position]
-            mean_abund_i.check_interval()
             print('{} - {}: {}'.format(source, position, mean_abund_i))
             mean_abund_source += [mean_abund_i]
         if len(list(mean_abunds[source].keys())) > 1:
@@ -698,32 +702,30 @@ if compute_mean_mol_mass:
         for position in abunds[source]:
             weights = abunds[source][position]
             cond = (np.ones(len(molecules), bool) if use_uplims
-                    else ~ abunds[source][position].are_uplims)
-            cond *= [np.isfinite(abund.center)
+                    else ~ abunds[source][position].are_uplims())
+            cond *= [np.isfinite(abund.main)
                      for abund in abunds[source][position]]
             def log_weights(weights):
-                abunds_vals = abunds[source][position][cond].centers
+                abunds_vals = abunds[source][position][cond].mains()
                 log_vals = np.log10(abunds_vals)
                 min_log, max_log = min(log_vals), max(log_vals)
                 y = np.log10(weights) - min_log + (1/4) * (max_log - min_log)
                 y = np.maximum(0., y)
                 return y
-            mean_mol_mass_i = \
-                rv.rich_fmean(molecular_masses[cond],
-                              weights=abunds[source][position][cond],
-                              weight_function=log_weights,
-                              domain=[0,np.inf], num_sf=1)
+            mean_mol_mass_i = rv.rich_fmean(molecular_masses[cond],
+                                weights=abunds[source][position][cond],
+                                weight_function=log_weights, domain=[0,np.inf])
             mean_mol_masses[source][position] = mean_mol_mass_i
     print('\nMean molecular mass. (g/mol)')
     for source in mean_mol_masses:
         mean_mol_mass_source = []
         for position in mean_mol_masses[source]:
             mean_mol_mass_i = mean_mol_masses[source][position]
-            mean_mol_mass_i.check_interval()
             print('{} - {}: {}'.format(source, position, mean_mol_mass_i))
             mean_mol_mass_source += [mean_mol_mass_i]
         if len(list(mean_mol_masses[source].keys())) > 1:
-            print('{} - (mean): {}'.format(source, np.mean(mean_mol_mass_source)))
+            print('{} - (mean): {}'.format(source,
+                                           np.mean(mean_mol_mass_source)))
 
 print()
 plt.show()
