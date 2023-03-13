@@ -3,7 +3,7 @@
 """
 MADCUBA Lines Plotter
 ---------------------
-Version 1.3
+Version 1.4
 
 Copyright (C) 2022 - Andrés Megías Toledano
 
@@ -873,7 +873,7 @@ for f,folder in enumerate(folders):
         if i <= len(spectra) - num_cols:
             num_cols_i = num_cols
         else:
-            num_cols_i = len(spectra)%num_cols
+            num_cols_i = len(spectra) % num_cols
         if intensity_lim == 'auto':
             for j in range(num_cols_i):
                 if i+j not in exceptions_indices_int:
@@ -893,8 +893,18 @@ for f,folder in enumerate(folders):
                 if j != 0 and i+j not in exceptions_indices_int:
                     axes[i+j].set_yticklabels([])
         axes[i].set_ylabel(intensity_label, labelpad=7.)
+    
+    for i,entry in enumerate(config['species']):
+        name = list(entry.keys())[0]
+        if 'frequency limits' in entry[name]:
+            axes[i].set_xlim(entry[name]['frequency limits'])
+        if 'velocity limits' in entry[name]:
+            axes[i].set_xlim(entry[name]['velocity limits'])
+        if 'intensity limits' in entry[name]:
+            ylims = entry[name]['intensity limits']
+            axes[i].set_ylim(ylims)
 
-    for i, velocity_lim in zip(range(num_cols), velocity_lims):
+    for i, velocity_lim in enumerate(velocity_lims):
         xlims = []
         for j in range(num_rows):
             if i + j*num_cols < len(spectra):
@@ -920,16 +930,17 @@ for f,folder in enumerate(folders):
         axes[i].set_xlabel(velocity_label, labelpad=7.)
         
     # Exceptions.
-    for i, ylim in zip(exceptions_indices_int, exceptions_limits_int):
-        axes[i].set_ylim(ylim)
-        axes[i].yaxis.tick_right()
-        axes[i].tick_params(axis='y', pad=3.)
-    # axes[i].yaxis.set_ticks_position('both')
-    for i, xlim in zip(exceptions_indices_vel, exceptions_limits_vel):
-        axes[i].set_xlim(xlim)
-        axes[i].xaxis.tick_top()
-        axes[i].tick_params(axis='x', pad=3.)
-    # axes[i].xaxis.set_ticks_position('both')
+    if join_subplots:
+        for i, ylim in zip(exceptions_indices_int, exceptions_limits_int):
+            axes[i].set_ylim(ylim)
+            axes[i].yaxis.tick_right()
+            axes[i].tick_params(axis='y', pad=3.)
+        # axes[i].yaxis.set_ticks_position('both')
+        for i, xlim in zip(exceptions_indices_vel, exceptions_limits_vel):
+            axes[i].set_xlim(xlim)
+            axes[i].xaxis.tick_top()
+            axes[i].tick_params(axis='x', pad=3.)
+        # axes[i].xaxis.set_ticks_position('both')
     
     # Transition lines.
     if show_transitions:
