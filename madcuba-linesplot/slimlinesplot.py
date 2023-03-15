@@ -238,6 +238,14 @@ def format_species_name(input_name, simplify_numbers=True):
         Formatted molecule name.
     """
     original_name = copy.copy(input_name)
+    # prefixes
+    possible_prefixes = ['cis-', 'trans-']
+    prefix = ''
+    for text in possible_prefixes:
+        if original_name.startswith(text):
+            prefix = text
+            break
+    original_name = original_name.replace(prefix, '')
     # upperscripts
     possible_upperscript, in_upperscript = False, False
     output_name = ''
@@ -305,6 +313,8 @@ def format_species_name(input_name, simplify_numbers=True):
         single_numbers = re.findall('{(.?)}', output_name)
         for number in set(single_numbers):
             output_name = output_name.replace('{'+number+'}', number)
+    # prefix
+    output_name = prefix + output_name
     return output_name
 
 def format_transition_numbers(input_numbers):
