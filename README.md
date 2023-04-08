@@ -7,4 +7,4 @@ Bundle of Python 3 scripts to process and plot the data obtained with the tool S
 
 Each of them has a user guide (`userguide.pdf`) that you can check to learn how to use them. There are also example files for each script, located in the `example` folders.
 
-MADCUBA website: https://cab.inta-csic.es/madcuba/.
+MADCUBA website: https://cab.inta-csic.es/madcuba.
