@@ -4,11 +4,11 @@ create lines table: yes
 
 input files:
     MADCUBA table:
-    - L1517B-madcuba.csv
-    - L1517BOFF1-madcuba.csv
+    - L1517B-center-madcuba.csv
+    - L1517B-methanol-madcuba.csv
     spectra table:
-    - L1517B-spectra.csv
-    - L1517BOFF1-spectra.csv
+    - L1517B-center-spectra.csv
+    - L1517B-methanol-spectra.csv
     LaTeX template: tables-template.tex
     non-LTE lines table:
         table-extra.tex: [CH3OH, HCCCN, CH3CN]

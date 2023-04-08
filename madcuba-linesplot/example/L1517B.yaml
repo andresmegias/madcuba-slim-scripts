@@ -23,8 +23,8 @@ figure titles:
 - 'L1517B - methanol peak'
 
 data folders:
-- 'L1517B'
-- 'L1517BOFF1'
+- 'L1517B-center'
+- 'L1517B-methanol'
 
 species:
 - CH3OCHO:
