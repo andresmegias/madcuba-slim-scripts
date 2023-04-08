@@ -1,0 +1,2 @@
+#frequency(km/s)	molecule	transition	qnfmt	dr	frequency(Hz)	intensity(K)	integrated(K km/s)
+5.800000190734863	CH3OH-E,vt=0-2	5,1,5-4,0,4		3.0	8.4521172E10	8.639632630181271E-4	0.0018035581531311916
