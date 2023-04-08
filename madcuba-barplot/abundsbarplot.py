@@ -3,7 +3,7 @@
 """
 Abundances Bar Plotter
 ----------------------
-Version 1.6
+Version 1.7
 
 Copyright (C) 2023 - Andrés Megías Toledano
 
@@ -79,7 +79,7 @@ def bibarplot(x, y1, y2, color1, color2, width, point_spacing=0.1):
             hatch1 = ''
         plt.bar(xi, y1i.main, color=c1, edgecolor='black', width=width,
                 align='center', lw=1, hatch=hatch1)
-        plt.errorbar(xi-xm, y1i.main, y1i.unc_eb(), uplims=y1i.is_uplim,
+        plt.errorbar(xi-xm, y1i.main, y1i.unc_eb, uplims=y1i.is_uplim,
                      fmt='.', capsize=2, capthick=1, ms=3, lw=1, color='k')
         if len(y2) > 0:
             if y2i.is_uplim:
@@ -89,7 +89,7 @@ def bibarplot(x, y1, y2, color1, color2, width, point_spacing=0.1):
                 hatch2 = ''
             plt.bar(xi, y2i.main, color=c2, edgecolor='black', width=width,
                     align='center', lw=1, hatch=hatch2)
-            plt.errorbar(xi+xm, y2i.main, y2i.unc_eb(), uplims=y2i.is_uplim,
+            plt.errorbar(xi+xm, y2i.main, y2i.unc_eb, uplims=y2i.is_uplim,
                          fmt='.', capsize=2, capthick=1, ms=3, lw=1, color='k')
 
 def format_species_name(input_name, simplify_numbers=True):
@@ -109,6 +109,14 @@ def format_species_name(input_name, simplify_numbers=True):
         Formatted molecule name.
     """
     original_name = copy.copy(input_name)
+    # prefixes
+    possible_prefixes = ['cis-', 'trans-']
+    prefix = ''
+    for text in possible_prefixes:
+        if original_name.startswith(text):
+            prefix = text
+            break
+    original_name = original_name.replace(prefix, '')
     # upperscripts
     possible_upperscript, in_upperscript = False, False
     output_name = ''
@@ -124,6 +132,8 @@ def format_species_name(input_name, simplify_numbers=True):
         if char == '-' and not in_upperscript:
             inds += [i]
             in_upperscript = True
+        if in_upperscript and not char.isdigit():
+            in_upperscript = False
         if not possible_upperscript:
             output_name += char
         if in_upperscript and i != inds[-1]:
@@ -137,6 +147,9 @@ def format_species_name(input_name, simplify_numbers=True):
                 upperscript = ''
                 in_upperscript, possible_upperscript = False, False
                 inds = []
+    if output_name == '':
+        output_name = original_name
+    output_name = output_name.replace('[', '^{').replace(']', '}')
     if output_name.endswith('+') or output_name.endswith('-'):
         symbol = output_name[-1]
         output_name = output_name.replace(symbol, '$^{'+symbol+'}$')
@@ -176,34 +189,58 @@ def format_species_name(input_name, simplify_numbers=True):
         single_numbers = re.findall('{(.?)}', output_name)
         for number in set(single_numbers):
             output_name = output_name.replace('{'+number+'}', number)
+    # prefix
+    output_name = prefix + output_name
+    output_name = output_name.replace('$^$', '')
     return output_name
 
-def count_atoms(molecule, atoms=['H', 'D', 'C', 'O', 'N', 'S', 'P']):
+def count_atoms(molecule):
     """
-    Count the number of atoms in the given molecule.
+    Count the number of atoms in the given species name.
 
     Parameters
     ----------
     molecule : str
         Chemical formula of the molecule.
-    atoms : list, optional
-        List containing the atoms to be counted (their names should be just one
-        letter). The default is ['H', 'D', 'C', 'N', 'O', 'P', 'S'].
 
     Returns
     -------
     num_atoms : dict
-        Dictionary containing the number of each atom.
+        Dictionary containing the counts of each atom.
     """
-    atoms = np.array(atoms)
-    num_atoms = {atom: 0 for atom in atoms}
-    prev_char = ''
-    for i,char in enumerate(molecule):
-        if char in atoms:
-            num_atoms[char] += 1
-        if char.isdigit() and prev_char in atoms:
-            num_atoms[prev_char] += int(char) - 1
-        prev_char = char
+    if '-' in molecule:
+        molecule = molecule.replace(molecule.split('-')[0]+'-', '')
+    for char in ['$', '{', '}']:
+        molecule = molecule.replace(char, '')
+    num_atoms = {}
+    name, number = '', '0'
+    reading_isotope, num_isotope = False, ''
+    for i,char in enumerate(molecule + ' '):
+        if char == '[':
+            num_isotope = ''
+            reading_isotope = True
+        elif reading_isotope and char != ']':
+            num_isotope += char
+        if char == ']':
+            num_isotope += '-'
+            reading_isotope = False
+        if (char.isupper() or char in [' ', '[']) and name != '':
+            if num_isotope != '':
+                name = num_isotope + name
+                num_isotope = ''
+            if name != '' and name not in num_atoms:
+                num_atoms[name] = 0
+            if name in num_atoms:
+                number = int(number)
+                if number == 0:
+                    number += 1
+                num_atoms[name] += number
+            name, number = '', '0'
+        if not reading_isotope:
+            if char.isalpha():
+                name += char
+            elif char.isdigit():
+                number += char
     return num_atoms
         
 def molecular_mass(molecule):
@@ -220,12 +257,12 @@ def molecular_mass(molecule):
     molec_mass : float
         Molecular mass of the molecule.
     """
-    molecular_masses = {'H': 1., 'D': 2., 'C': 12., 'N': 14., 'O': 16.,
-                        'P': 31., 'S': 32.}
     num_atoms = count_atoms(molecule)
     molec_mass = 0
-    for atom in molecular_masses:
-        molec_mass += num_atoms[atom] * molecular_masses[atom]
+    for atom in num_atoms:
+        if '-' in atom and atom not in atomic_masses:
+            atomic_masses[atom] = float(atom.split('-')[0])
+        molec_mass += num_atoms[atom] * atomic_masses[atom]
     return molec_mass
 
 def fractional_similarity(u, v):
@@ -366,8 +403,8 @@ def rich_cosine_similarity(u, v):
         return y
     s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1])
     s.num_sf = 2
-    ub = (~u.are_uplims()).astype(int)
-    vb = (~v.are_uplims()).astype(int)
+    ub = (~u.are_uplims).astype(int)
+    vb = (~v.are_uplims).astype(int)
     ref_uncs = cosine_similarity(ub, vb).unc
     s.unc[0] = max(ref_uncs[0], s.unc[0])
     s.unc[1] = max(ref_uncs[1], s.unc[1])
@@ -404,13 +441,19 @@ def rich_angular_similarity(u, v):
         return y
     s = rv.function_with_rich_values(function, [*u,*v], domain=[0,1])
     s.num_sf = 2
-    ub = (~u.are_uplims()).astype(int)
-    vb = (~v.are_uplims()).astype(int)
+    ub = (~u.are_uplims).astype(int)
+    vb = (~v.are_uplims).astype(int)
     ref_uncs = angular_similarity(ub, vb).unc
     s.unc[0] = max(ref_uncs[0], s.unc[0])
     s.unc[1] = max(ref_uncs[1], s.unc[1])
     return s
 
+atomic_masses = {'H': 1.0, 'D': 2.0, 'Li': 6.9, 'Be': 9.0, 'B': 10.8,
+                 'C': 12.0, 'N': 14.0, 'O': 16.0, 'F': 19.0, 'Na': 23.0,
+                 'Mg': 24.3, 'Al': 27.0, 'Si': 28.1, 'P': 31.0, 'S': 32.1,
+                 'Cl': 35.5, 'K': 39.1, 'Ca': 40.1, 'Sc': 45.0, 'Ti': 47.9,
+                 'V': 50.9, 'Cr': 52.0, 'Mn': 54.9, 'Fe': 55.8, 'Ni': 58.7,
+                 'Co': 58.9, 'Cu': 63.5, 'Zn': 65.4}
 
 #%%
 
@@ -644,12 +687,12 @@ if compute_similarity:
         num_entries = len(vectors[name1])
         if num_entries != 0:
             cond = (np.ones(num_entries, bool) if use_uplims_for_similarity
-                    else ~vectors[name1].are_uplims())
+                    else ~vectors[name1].are_uplims)
             cond *= [np.isfinite(rv.rich_value(entry).main)
                      for entry in vectors[name1]]
             cond = (cond * np.ones(num_entries, bool)
                     if use_uplims_for_similarity
-                    else cond * ~vectors[name2].are_uplims())
+                    else cond * ~vectors[name2].are_uplims)
             cond *= [np.isfinite(rv.rich_value(entry).main)
                      for entry in vectors[name2]]
             cos_sim = similarity_function(vectors[name1][cond],
@@ -672,13 +715,13 @@ if compute_mean_abund:
         mean_abunds[source] = {}
         for position in abunds[source]:
             cond = (np.ones(len(molecules), bool) if use_uplims
-                    else ~ abunds[source][position].are_uplims())
+                    else ~ abunds[source][position].are_uplims)
             cond *= [np.isfinite(abund.main)
                      for abund in abunds[source][position]]
             mean_abund_i = rv.rich_fmean(abunds[source][position][cond],
                              function=np.log, inverse_function=np.exp,
                              weights=molecular_masses[cond], domain=[0,np.inf],
-                             consider_ranges=False)
+                             consider_intervs=False)
             mean_abunds[source][position] = mean_abund_i
     print('\nMean abundance.')
     for source in mean_abunds:
@@ -702,11 +745,11 @@ if compute_mean_mol_mass:
         for position in abunds[source]:
             weights = abunds[source][position]
             cond = (np.ones(len(molecules), bool) if use_uplims
-                    else ~ abunds[source][position].are_uplims())
+                    else ~ abunds[source][position].are_uplims)
             cond *= [np.isfinite(abund.main)
                      for abund in abunds[source][position]]
             def log_weights(weights):
-                abunds_vals = abunds[source][position][cond].mains()
+                abunds_vals = abunds[source][position][cond].mains
                 log_vals = np.log10(abunds_vals)
                 min_log, max_log = min(log_vals), max(log_vals)
                 y = np.log10(weights) - min_log + (1/4) * (max_log - min_log)
