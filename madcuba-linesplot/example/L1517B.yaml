@@ -1,16 +1,22 @@
-figure size: [9, 6]
-font size: 8
+figure size: [12, 6]
+font size: 12
+label font size: 10
 rows: 3
 columns: 3
 
-velocity limits: [[1, 9], [1, 9], [1,9]]
+velocity limits: [[1, 9], [1, 9], [1, 9]]
 intensity limits: [[-0.04, 0.08], [-0.04, 0.08], [-0.15, 0.90]]
+transitions threshold: 'auto'
+title height: 0.95
 subplot titles height: 0.92
 fit plot style: 'curve'
 fit color: 'tab:red'
 gaussian fit: yes
 show transitions: yes
-show transition numbers: no
+show quantum numbers: no
+show all species transitions: no
+show all species fit: no
+join subplots: yes
 
 figure titles:
 - 'L1517B - dust peak'
@@ -80,3 +86,6 @@ species:
           width: '0.351'
         - intensity: '0.852'
           width: '0.359'
+
+species acronyms:
+    Cyclopropenone: c-C3H2O
