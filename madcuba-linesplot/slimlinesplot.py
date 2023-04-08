@@ -3,9 +3,9 @@
 """
 MADCUBA Lines Plotter
 ---------------------
-Version 1.4
+Version 1.5
 
-Copyright (C) 2022 - Andrés Megías Toledano
+Copyright (C) 2023 - Andrés Megías Toledano
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -221,7 +221,7 @@ def fit_gaussians(x, y, windows, width):
         fit_params += [params]
     return fit_params
 
-def format_species_name(input_name, simplify_numbers=True):
+def format_species_name(input_name, simplify_numbers=True, acronyms={}):
     """
     Format text as a molecule name, with subscripts and upperscripts.
 
@@ -238,6 +238,10 @@ def format_species_name(input_name, simplify_numbers=True):
         Formatted molecule name.
     """
     original_name = copy.copy(input_name)
+    # acronyms
+    for name in acronyms:
+        if original_name == name:
+            original_name = acronyms[name]
     # prefixes
     possible_prefixes = ['cis-', 'trans-']
     prefix = ''
@@ -246,6 +250,8 @@ def format_species_name(input_name, simplify_numbers=True):
             prefix = text
             break
     original_name = original_name.replace(prefix, '')
+    # removing the additional information after commas
+    original_name = original_name.split(',')[0]
     # upperscripts
     possible_upperscript, in_upperscript = False, False
     output_name = ''
@@ -261,6 +267,8 @@ def format_species_name(input_name, simplify_numbers=True):
         if char == '-' and not in_upperscript:
             inds += [i]
             in_upperscript = True
+        if in_upperscript and not char.isdigit():
+            in_upperscript = False
         if not possible_upperscript:
             output_name += char
         if in_upperscript and i != inds[-1]:
@@ -274,6 +282,9 @@ def format_species_name(input_name, simplify_numbers=True):
                 upperscript = ''
                 in_upperscript, possible_upperscript = False, False
                 inds = []
+    if output_name == '':
+        output_name = original_name
+    output_name = output_name.replace('[', '^{').replace(']', '}')
     if output_name.endswith('+') or output_name.endswith('-'):
         symbol = output_name[-1]
         output_name = output_name.replace(symbol, '$^{'+symbol+'}$')
@@ -298,14 +309,14 @@ def format_species_name(input_name, simplify_numbers=True):
             output_name += '$_{' + subscript + '}$'
         prev_char = char
     output_name = output_name.replace('^$_', '$^').replace('$$', '')
-    # vibrational numbers
-    output_name = output_name.replace(',vt', ', vt')
-    output_name = output_name.replace(', vt=', '$, v_t=$')
-    output_name = output_name.replace(',v=', '$, v=$')
-    for i,char in enumerate(output_name):
-        if output_name[i:].startswith('$v_t=$'):
-            output_name = output_name[:i+5] + \
-                output_name[i+5:].replace('$_','').replace('_$','')
+    # # vibrational numbers
+    # output_name = output_name.replace(',vt', ', vt')
+    # output_name = output_name.replace(', vt=', '$, v_t=$')
+    # output_name = output_name.replace(',v=', '$, v=$')
+    # for i,char in enumerate(output_name):
+    #     if output_name[i:].startswith('$v_t=$'):
+    #         output_name = output_name[:i+5] + \
+    #             output_name[i+5:].replace('$_','').replace('_$','')
     # some formatting
     output_name = output_name.replace('$$', '').replace('__', '')
     # remove brackets from single numbers
@@ -315,43 +326,46 @@ def format_species_name(input_name, simplify_numbers=True):
             output_name = output_name.replace('{'+number+'}', number)
     # prefix
     output_name = prefix + output_name
+    output_name = output_name.replace('$^$', '')
     return output_name
 
-def format_transition_numbers(input_numbers):
+def format_quantum_numbers(input_numbers):
     """
     Format text as a molecular transition.
 
     Parameters
     ----------
     input_numbers : str
-        Input text with the transition numbers separated with commas (,) and
-        hyphens (-).
+        Input text with the transition quantum numbers separated with commas
+        (,) and hyphens (-).
 
     Returns
     -------
     output_numbers : str
-        Formatted transition numbers.
+        Formatted quantum numbers.
     """
-    if '-' in input_numbers and not ',' in input_numbers:
-        numbers = input_numbers.split('-')
+    input_numbers = input_numbers.replace('-', ';')
+    if not ';' in input_numbers:
+        numbers = input_numbers.split(',')
         num_qn = len(numbers) // 2
-        input_numbers = ','.join(numbers[:num_qn]) + '-' + \
+        input_numbers = ','.join(numbers[:num_qn]) + ';' + \
             ','.join(numbers[num_qn:])
-    if '-' in input_numbers and ',' in input_numbers:
-        number1, number2 = input_numbers.split('-')
-        first_number = number1.split(',')[0]
-        subindices = ','.join(number1.split(',')[1:])
-        number1 = '$' + first_number + '_{' + subindices + '}$'
-        first_number = number2.split(',')[0]
-        subindices = ','.join(number2.split(',')[1:])
-        number2 = '$' + first_number + '_{' + subindices + '}$'
-        output_numbers = '-'.join([number1, number2])
-        output_numbers = output_numbers.replace('$-$', ' \\rightarrow ')
+    if ';' in input_numbers:
+        numbers1, numbers2 = input_numbers.split(';')
+        first_number = numbers1.split(',')[0]
+        subindices = ','.join(numbers1.split(',')[1:])
+        numbers1 = '$' + first_number + '_{' + subindices + '}$'
+        first_number = numbers2.split(',')[0]
+        subindices = ','.join(numbers2.split(',')[1:])
+        numbers2 = '$' + first_number + '_{' + subindices + '}$'
+        output_numbers = '>'.join([numbers1, numbers2])
+        output_numbers = output_numbers.replace('>', ' $\\rightarrow$ ')
+        output_numbers = output_numbers.replace('_{}', '')
     else:
-        output_numbers = input_numbers.replace('-', '$\\rightarrow$')
+        output_numbers = input_numbers
     return output_numbers
 
-def check_overlap(positions, plot_interval, width=1/20):
+def check_overlap(positions, plot_interval=None, width=0.08):
     """
     Check if any of the given label positions overlap.
     
@@ -359,11 +373,11 @@ def check_overlap(positions, plot_interval, width=1/20):
     ----------
     positions : list (float)
         Positions to check.
-    plot_interval : float
+    plot_interval : float, optional
         Horizontal range of the plot in which the labels will appear.
-    width : float (optional)
+    width : float, optional
         Minimum separation betweeen positions to check the overlaping.
-        The default is 1/20.
+        The default is 0.08.
 
     Returns
     -------
@@ -374,6 +388,8 @@ def check_overlap(positions, plot_interval, width=1/20):
     """
     positions = np.array(positions)
     num_positions = len(positions)
+    if plot_interval is None:
+        plot_interval = [positions.min(), positions.max()]
     plot_range = plot_interval[1] - plot_interval[0]
     combinations_inds = \
         list(itertools.combinations(np.arange(num_positions), 2))
@@ -404,7 +420,7 @@ def check_overlap(positions, plot_interval, width=1/20):
                 new_group = False
     return overlap, overlap_mask, overlap_group_inds
 
-def create_label_positions(initial_positions, plot_interval, width=1/20,
+def create_label_positions(initial_positions, plot_interval, width=0.08,
                            max_iters=3000):
     """
     Generates label positions that not overlap from the given positions.
@@ -415,10 +431,10 @@ def create_label_positions(initial_positions, plot_interval, width=1/20,
         Initial positions.
     plot_interval : float
         Horizontal range of the plot in which the labels will appear.
-    width : float (optional)
+    width : float, optional
         Minimum separation betweeen labels to check the overlaping.
-        The default is 1/20.
-    max_iters : int (optional)
+        The default is 0.08.
+    max_iters : int, optional
         Maximum number of iterations for finding the proper positions.
 
     Returns
@@ -426,14 +442,13 @@ def create_label_positions(initial_positions, plot_interval, width=1/20,
     new positions : list (float).
         Generated positions, that not overlap.
     """
-    initial_order = np.argsort(initial_positions)
     plot_range = plot_interval[1] - plot_interval[0]
     overlap, overlap_mask, _, = check_overlap(initial_positions, plot_interval)
     if not overlap:
         return initial_positions
     else:
         for i in range(max_iters):
-            factor = 0.3*i/1000
+            factor = 0.3*(i+1)/1000
             new_positions = []
             for j,x in enumerate(initial_positions):
                 if overlap_mask[j]:
@@ -445,15 +460,12 @@ def create_label_positions(initial_positions, plot_interval, width=1/20,
                 new_positions += [xx]
             overlap, overlap_mask, _, = \
                 check_overlap(new_positions, plot_interval)
-            new_order = np.argsort(new_positions)
-            if not np.array_equal(initial_order, new_order):
-                overlap = True
             if not overlap:
                 break
-        if not overlap:
-            return new_positions
-        else:
-            return initial_positions   
+        if overlap:
+            x1, x2 = min(new_positions), max(new_positions)
+            new_positions = np.linspace(x1, x2, len(positions)).tolist()
+        return new_positions
 
 def parse_text_location(text, fig):
     """
@@ -483,7 +495,6 @@ def parse_text_location(text, fig):
     y1, y2 = float(y1), float(y2)
     return x1, x2, y1, y2
 
-#%%
 
 # Default options.
 default_options = {
@@ -502,6 +513,8 @@ default_options = {
     'velocity limits': [],
     'frequency limits': [],
     'intensity limits': [],
+    'horizontal axis': 'velocity',
+    'transitions threshold': 'auto',
     'velocity label': 'velocity (km/s)',
     'frequency label': 'frequency (GHz)',
     'intensity label': 'intensity (K)',
@@ -513,13 +526,14 @@ default_options = {
     'figure titles': [],
     'data folders': [],
     'species': [],
+    'species acronyms': [],
     'join subplots': True,
     'show transitions': False,
-    'show transition numbers': False,
+    'show quantum numbers': False,
     'show all species transitions': False,
     'save figure': True,
     'show all species fit': False,
-    'transition labels minimum distance': 0.05
+    'transition labels minimum distance': 0.08
     }
 gray = tuple([0.6]*3)
 plt.close('all')
@@ -548,7 +562,6 @@ config = {**default_options, **config_or}
 figure_size = config['figure size']
 font_size = config['font size']
 label_font_size = config['label font size']
-label_font_size = 0.9*font_size if label_font_size is None else label_font_size
 frame_width = config['frame width']
 line_width = config['plot line width']
 fit_line_width = config['fit line width']
@@ -559,7 +572,7 @@ title_height = config['title height']
 subtitles_height = config['subplot titles height']
 join_subplots = config['join subplots']
 ticks_direction = config['ticks direction']
-use_frequency = config['use frequencies']
+horizontal_axis = config['horizontal axis']
 velocity_lims = config['velocity limits']
 if len(velocity_lims) != num_cols:
     velocity_lims = ['auto'] * num_cols
@@ -569,6 +582,7 @@ if len(frequency_lims) != num_cols:
 intensity_lims = config['intensity limits']
 if len(intensity_lims) != num_rows:
     intensity_lims = ['auto'] * num_rows
+lines_lim = config['transitions threshold']
 velocity_label = config['velocity label']
 frequency_label = config['frequency label']
 intensity_label = config['intensity label']
@@ -579,10 +593,11 @@ all_species_fit_color = config['all species fit color']
 other_species_color = config['other species color']
 show_transitions = config['show transitions']
 show_all_species_transitions = config['show all species transitions']
-show_transition_numbers = config['show transition numbers']
+show_quantum_numbers = config['show quantum numbers']
 save_figure = config['save figure']
 label_min_dist = config['transition labels minimum distance']
 show_all_species_fit = config['show all species fit']
+acronyms = config['species acronyms']
 if join_subplots:
     ticks_direction = 'in'
 multiplot = True if 'data folders' in config else False
@@ -594,12 +609,21 @@ else:
     figure_titles = [config['figure title']]
 data_subfolder = separator + 'data' + separator
 spectroscopy_subfolder = separator + 'spectroscopy' + separator
+use_frequency = True if horizontal_axis == 'frequency' else False
 if (('frequency limits' in config_or or 'frequency label' in config_or)
         and ('velocity limits' not in config_or
              and 'velocity label' not in config_or)):
     use_frequency = True
 if use_frequency:
     join_subplots = False
+if label_font_size is None:
+    label_font_size = 0.9*font_size
+if show_all_species_transitions or show_quantum_numbers:
+    label_font_size = min(0.7*font_size, label_font_size)
+    if show_all_species_transitions and show_quantum_numbers:
+        label_font_size = min(0.4*font_size, label_font_size)
+else:
+    label_font_size = 0.9*font_size
 speed_light = 2.99e5  # km/s
 
 # Graphical options.
@@ -617,6 +641,8 @@ plt.rcParams['ytick.major.size'] = 5.
 plt.rcParams['ytick.right'] = True
 plt.rcParams['xtick.top'] = True
 plt.rcParams['axes.formatter.useoffset'] = False
+xpad = 7. if join_subplots else 10.
+ypad = 7. if join_subplots else 10.
 
 #%%
 
@@ -644,7 +670,7 @@ for f,folder in enumerate(folders):
         for spectrum in all_spectra:
             spectrum = spectrum.split('/')[-1]
             config_prefix = config['species'][i][molecule]['file']
-            if type(config_prefix) == list:
+            if type(config_prefix) in (list,tuple):
                 config_prefix = config_prefix[f]
             if spectrum.startswith(config_prefix):
                 spectrum_files += [folder + molecule + data_subfolder + spectrum]
@@ -654,7 +680,7 @@ for f,folder in enumerate(folders):
                     if title.count('*') == 2:
                         species_name = title.split('*')[1]
                         title = title.replace('*{}*'.format(species_name),
-                                              format_species_name(species_name))
+                          format_species_name(species_name, acronyms=acronyms))
                 else:
                     title = 'auto'
                 titles += [title]
@@ -662,7 +688,7 @@ for f,folder in enumerate(folders):
                     config_fit = config['species'][i][molecule]['fit']
                 else:
                     config_fit = False
-                if type(config_fit) == list:
+                if type(config_fit) in (list,tuple):
                     config_fit = config_fit[f]
                 plot_fits += [config_fit]
                 if 'lines of the fit' in config['species'][i][molecule]:
@@ -673,48 +699,40 @@ for f,folder in enumerate(folders):
                 if manual_fit:
                     manual_lines_i = \
                         config['species'][i][molecule]['lines of the fit']
-                    if type(manual_lines_i) is list:
+                    if type(manual_lines_i) in [list,tuple]:
                         manual_lines_i = manual_lines_i[f]
-                    elif (type(manual_lines_i) is list
+                    elif (type(manual_lines_i) in [list,tuple]
                           and len(manual_lines_i) == 1):
                         manual_lines_i = manual_lines_i[0]
                 else:
                     manual_lines_i = {}
                 manual_lines += [manual_lines_i]
                 
-        if 'intensity limits' in config['species'][i][molecule]:
-            if (i+1 - num_cols) % num_cols == 0:
+        if join_subplots:
+            if ('intensity limits' in config['species'][i][molecule]
+                    and (i+1 - num_cols) % num_cols == 0):
                 exceptions_indices_int += [i]
                 exceptions_limits_int += \
                     [config['species'][i][molecule]['intensity limits']]
-            else:
-                raise Exception ('Wrong place of exception in molecule {}.'
-                                 .format(molecule))
-        if 'velocity limits' in config['species'][i][molecule]:
-            if i < num_cols:
+            if ('velocity limits' in config['species'][i][molecule]
+                    and i < num_cols):
                 exceptions_indices_vel += [i]
                 exceptions_limits_vel += \
                     [config['species'][i][molecule]['velocity limits']]
-            else:
-                raise Exception ('Wrong place of exception in molecule {}.'
-                                 .format(molecule))
         if 'fit color' in config['species'][i][molecule]:
             config_color = config['species'][i][molecule]['fit color']
-            if type(config_color) is list:
+            if type(config_color) in (list,tuple):
                 config_color = config_color[f]
             fit_colors += [config_color]
         else:
             fit_colors += [usual_fit_color]
     
     # Loading of the spectra.
-    spectra, spectra_all, transitions_main, transitions_rest = [], [], [], []
+    spectra, transitions_main, transitions_rest = [], [], []
     freqs = []
     for file in spectrum_files:
         spectra += [np.loadtxt(file)]
         freqs += [float(file.split('_')[-1]) / 1e9]
-        if show_all_species_fit:
-            file = file.replace('/' + molecule, '/' + molecule + '_all')
-            spectra_all += [np.loadtxt(file)]
         file = file.replace(data_subfolder, spectroscopy_subfolder)
         transitions_main += [np.loadtxt(file, str)]
         prefix = file.split(spectroscopy_subfolder)[0] + spectroscopy_subfolder
@@ -758,6 +776,8 @@ for f,folder in enumerate(folders):
         figure_size = (3*num_cols, 2*num_rows)
     fig = plt.figure(1+f, figsize=figure_size)
     plt.clf()
+    if join_subplots:
+        plt.subplots_adjust(wspace=0, hspace=0)
     # Indices of rows and columns.
     y_idx = np.arange(0, len(spectra), num_cols)
     x_idx = np.arange(len(spectra))
@@ -771,7 +791,7 @@ for f,folder in enumerate(folders):
         intensity = spectrum[:,1]
         intensity_fit = spectrum[:,2]
         if show_all_species_fit:
-            intensity_fit_all = spectra_all[i][:,2]
+            intensity_fit_all = spectra[i][:,3]
         velocity_fit = velocity.copy()
         if fit_style == 'curve':
             N = spectrum.shape[0]
@@ -779,8 +799,7 @@ for f,folder in enumerate(folders):
             if len(manual_fits) > 0 and not manual_fits[i]:
                 if gaussian_fit:
                     # guess = [intensity_fit.max(), velocity[N//2], 0.3]
-                    # params, _ = curve_fit(gaussian, velocity, intensity_fit,
-                    #                       p0=guess)
+                    # params, _ = curve_fit(gaussian, velocity, intensity_fit, p0=guess)
                     params, _, _ = multigaussian_fit(velocity, intensity_fit,
                                                       verbose=False)
                     intensity_fit = multigaussian(velocity_fit, *params)
@@ -803,15 +822,13 @@ for f,folder in enumerate(folders):
                     intensity_fit += gaussian(velocity_fit,
                                               height, mean, width)
             if show_all_species_fit:
-                interpolation = interp1d(velocity, spectra_all[i][:,2],
+                interpolation = interp1d(velocity, spectra[i][:,3],
                                          kind='quadratic')
                 intensity_fit_all = interpolation(velocity_fit)
         ax = plt.subplot(num_rows, num_cols, i+1)
         if i+1 == 1 and len(intensity_lims) == 0:
-            plt.ylabel(intensity_label)
+            ax.set_ylabel(intensity_label, labelpad=ypad)
         axes += [ax]
-        if join_subplots:
-            plt.subplots_adjust(wspace=0, hspace=0)
         if use_frequency:
             frequency = freqs[i] * (1 + velocity / speed_light)
             frequency_fit = freqs[i] * (1 + velocity_fit / speed_light)
@@ -819,7 +836,15 @@ for f,folder in enumerate(folders):
             velocity_fit = frequency_fit
             velocity_label = frequency_label
             velocity_lims = frequency_lims
-        plt.step(velocity, intensity, where='mid', color='black', lw=lw)
+        plt.step(velocity, intensity, where='mid', color=[0.1]*3, lw=lw)
+        if show_quantum_numbers or show_all_species_transitions:
+            y1, y2 = plt.ylim()
+            if show_quantum_numbers and show_all_species_transitions:
+                margin = 1.4
+            else:
+                margin = 0.8
+            y2 += margin*(y2-y1)
+            plt.ylim(y1, y2)
         if len(plot_fits) > 0 and plot_fits[i]:
             if fit_style == 'steps':
                 plt.step(velocity_fit, intensity_fit, where='mid',
@@ -836,7 +861,8 @@ for f,folder in enumerate(folders):
         if len(np.array(transitions_main[i]).shape) == 1:
             transitions_main[i] = [transitions_main[i]]
         if titles[i] == 'auto':
-            titles[i] = format_species_name(transitions_main[i][0][1])
+            titles[i] = format_species_name(transitions_main[i][0][1],
+                                            acronyms=acronyms)
         lines += [[]]
         transitions = transitions_main[i]
         if show_all_species_transitions:
@@ -847,18 +873,30 @@ for f,folder in enumerate(folders):
                     transitions += [transition_j]
         for line in transitions:
             x0 = float(line[0])
+            name = line[1]
+            line_intensity = float(line[4])
             if use_frequency:
                 x0 = freqs[i] * (1 + x0 / speed_light)
-            molecule = format_species_name(line[1])
+            molecule = format_species_name(name, acronyms=acronyms)
             label = '' 
-            if show_transition_numbers:
-                label += format_transition_numbers(line[2])
+            if show_quantum_numbers:
+                label += format_quantum_numbers(line[2])
             if show_all_species_transitions:
                 prefix = molecule
-                if show_transition_numbers:
+                if show_quantum_numbers:
                     prefix += ':  '
                 label = prefix + label
-            lines[i] += [{'position': x0, 'label': label}]
+            entry = list(config['species'][i].keys())[0]
+            if 'transitions threshold' in config['species'][i][entry]:
+                lines_lim_i = config['species'][i][entry]['transitions threshold']
+            elif lines_lim == 'auto':
+                ylims = plt.ylim()
+                lines_lim_i = min(0.1*intensity.max(), ylims[1])
+            else:
+                lines_lim_i = copy.copy(lines_lim)
+            if line_intensity > lines_lim_i:
+                lines[i] += [{'position': x0, 'molecule': name, 'label': label,
+                              'intensity': line_intensity}]
         plt.margins(x=0)
         plt.minorticks_on()
         plt.locator_params(axis='x', nbins=5)
@@ -871,7 +909,8 @@ for f,folder in enumerate(folders):
             plt.tick_params(axis='y', pad=8.)
         if len(titles[i]) > 0 and not show_all_species_transitions:
             plt.text(0.05, subtitles_height, titles[i], transform=ax.transAxes,
-                      horizontalalignment='left', verticalalignment='top')
+                      horizontalalignment='left', verticalalignment='top',
+                      fontsize=label_font_size)
 
     fig.align_ylabels()
     plt.suptitle(figure_titles[f], fontweight='semibold', y=title_height)
@@ -893,26 +932,16 @@ for f,folder in enumerate(folders):
             if show_transitions:
                 if show_all_species_transitions:
                     ylims[1] *= 1.5
-                if show_transition_numbers:
+                if show_quantum_numbers:
                     ylims[1] *= 2
         else:
-            ylims = intensity_lim  
+            ylims = intensity_lim
         for j in range(num_cols_i):
             if join_subplots:
                 axes[i+j].set_ylim(ylims)
                 if j != 0 and i+j not in exceptions_indices_int:
                     axes[i+j].set_yticklabels([])
-        axes[i].set_ylabel(intensity_label, labelpad=7.)
-    
-    for i,entry in enumerate(config['species']):
-        name = list(entry.keys())[0]
-        if 'frequency limits' in entry[name]:
-            axes[i].set_xlim(entry[name]['frequency limits'])
-        if 'velocity limits' in entry[name]:
-            axes[i].set_xlim(entry[name]['velocity limits'])
-        if 'intensity limits' in entry[name]:
-            ylims = entry[name]['intensity limits']
-            axes[i].set_ylim(ylims)
+        axes[i].set_ylabel(intensity_label, labelpad=ypad)
 
     for i, velocity_lim in enumerate(velocity_lims):
         xlims = []
@@ -936,8 +965,19 @@ for f,folder in enumerate(folders):
             else:
                 axes[idx].set_xlim(xlims)
            
+    if not join_subplots:
+        for i,entry in enumerate(config['species']):
+            name = list(entry.keys())[0]
+            if 'frequency limits' in entry[name]:
+                axes[i].set_xlim(entry[name]['frequency limits'])
+            if 'velocity limits' in entry[name]:
+                axes[i].set_xlim(entry[name]['velocity limits'])
+            if 'intensity limits' in entry[name]:
+                ylims = entry[name]['intensity limits']
+                axes[i].set_ylim(ylims)            
+    
     for i in x_idx:
-        axes[i].set_xlabel(velocity_label, labelpad=7.)
+        axes[i].set_xlabel(velocity_label, labelpad=xpad)
         
     # Exceptions.
     if join_subplots:
@@ -955,6 +995,20 @@ for f,folder in enumerate(folders):
     # Transition lines.
     if show_transitions:
         for i,lines_i in enumerate(lines):
+            positions_i = [line_ij['position'] for line_ij in lines_i]
+            inds = np.argsort(positions_i)
+            lines_i = np.array(lines_i)[inds].tolist()
+            entry = list(config['species'][i].keys())[0]
+            if len(lines_i) == 0:
+                molecule = format_species_name(entry)
+                axes[i].text(0.05, subtitles_height, molecule,
+                             transform=axes[i].transAxes, ha='left', va='top',
+                             fontsize=label_font_size)
+                continue
+            if 'label font size' in config['species'][i][entry]:
+                lfs = config['species'][i][entry]['label font size']
+            else:
+                lfs = label_font_size
             # plt.subplot(num_rows, num_cols, i+1)
             ylim1, ylim2 = axes[i].get_ylim()
             yrange = ylim2 - ylim1
@@ -965,41 +1019,51 @@ for f,folder in enumerate(folders):
             xlim2_pix, ylim2_pix = axes[i].transData.transform([xlim2, ylim2])
             yrange_pix = ylim2_pix - ylim1_pix
             xrange_pix = xlim2_pix - xlim1_pix
-            positions, labels = [], []
-            for line in lines[i]:
-                positions += [line['position']]
-                labels += [line['label']]
+            positions, labels, molecules = [], [], []
+            for j,line in enumerate(lines_i):
+                if line['label'] in labels:
+                    for position in positions:
+                        positions_j = [line['position'], positions[-1]]
+                        overlap, _, _ = check_overlap(positions_j,
+                                                      xlims, label_min_dist)
+                        if overlap:
+                            break
+                else:
+                    overlap = False
+                if not overlap:
+                    positions += [line['position']]
+                    labels += [line['label']]
+                    molecules += [line['molecule']]
             label_positions = \
                 create_label_positions(positions, plot_interval=xlims,
                                        width=label_min_dist)
-            overlap, overlap_mask, overlap_groups_inds = \
-                check_overlap(positions, plot_interval=xlims,
-                              width=label_min_dist)
+            overlap, overlap_mask, overlap_group_inds = \
+                check_overlap(positions, xlims, label_min_dist)
             overlap_inds = np.arange(len(positions))[overlap_mask]
-            line_ylims = {}
-            for j,line in enumerate(lines_i):
+            line_ylims, plotted_labels = {}, []
+            for j in range(len(labels)):
                 x0 = positions[j]
-                if x0 > xlim1 + 0.01*xrange and x0 < xlim2 - 0.01*xrange:
+                label = labels[j]
+                eps = 0.0
+                plot_cond = x0 > xlim1 + eps*xrange and x0 < xlim2 - eps*xrange
+                if plot_cond:
                     x0_label = label_positions[j]
-                    label = line['label']
                     if (not show_all_species_transitions
-                        and x0_label < xlims[0] + xrange/4):
+                            and x0_label < xlims[0] + xrange/4):
                         y0_label = 0.82 * ylim2
                     else:
                         y0_label = 0.95 * ylim2
-                    if titles[i] in label:
-                        color = 'black'
-                    else:
-                        color = other_species_color
+                    current_species = transitions_main[i][0][1]
+                    color = ('black' if current_species in molecules[j]
+                             else other_species_color)
                     text = axes[i].text(x=x0_label, y=y0_label, s=label,
-                                        rotation=90, fontsize=label_font_size,
-                                        alpha=1., ha='center', va='top',
-                                        color=color)
+                                        rotation=90, fontsize=lfs,
+                                        ha='center', va='top',color=color)
                     x1_pix, x2_pix, y1_pix, y2_pix = \
                         parse_text_location(text, fig)
                     ymin = ylim1 / yrange
                     if (not show_all_species_transitions
-                        and not show_transition_numbers):
+                        and not show_quantum_numbers):
                         ymax = 1.0
                     else:
                         ymax = (y0_label/yrange - 0.03
@@ -1010,21 +1074,22 @@ for f,folder in enumerate(folders):
                         axes[i].plot(x, y, color=gray, lw=0.9*lw, ls='--',
                                      alpha=0.7)
                     line_ylims[j] = [ymin, ymax]
-            for group in overlap_groups_inds:
+            for inds in overlap_group_inds:
                 group_line_positions = []
                 group_label_positions = []
                 group_limits = []
-                for k in group:
+                for k in inds:
                     x0 = positions[k]
-                    if x0 > xlim1 + 0.01*xrange and x0 < xlim2 - 0.01*xrange:
+                    if plot_cond:
                         group_line_positions += [positions[k]]
                         group_label_positions += [label_positions[k]]
                         group_limits += [line_ylims[k]]
                 group_limits = np.array(group_limits)
                 if len(group_limits) > 0:
+                    x0 = positions[len(positions)//2]
                     line_position = np.mean(group_line_positions)
-                    ymin = min(group_limits[:,0])
-                    ymax = min(group_limits[:,1])
+                    ymin = np.min(group_limits[:,0])
+                    ymax = np.min(group_limits[:,1])
                     ynode = ymin + 0.85*(ymax - ymin)
                     x = np.array([x0, x0])
                     y = np.array([ymin, ynode]) * yrange
@@ -1037,13 +1102,13 @@ for f,folder in enumerate(folders):
                         x = np.array([x0, xl])
                         y = np.array([ynode, ymax]) * yrange
                         axes[i].plot(x, y, color=gray, lw=0.9*lw, ls='--',
-                                     alpha=0.7)    
+                                     alpha=0.7)
             _, ymax = axes[i].get_ylim()
             axes[i].margins(y=0)
             axes[i].set_ylim(top=ymax)
             
     if not join_subplots:
-        plt.tight_layout()
+        plt.tight_layout(wsapce=0, hspace=0)
     
     # Exporting of the figure.
     if save_figure:
