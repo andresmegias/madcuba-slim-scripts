@@ -718,10 +718,10 @@ if compute_mean_abund:
                     else ~ abunds[source][position].are_uplims)
             cond *= [np.isfinite(abund.main)
                      for abund in abunds[source][position]]
-            mean_abund_i = rv.rich_fmean(abunds[source][position][cond],
+            mean_abund_i = rv.fmean(abunds[source][position][cond],
                              function=np.log, inverse_function=np.exp,
-                             weights=molecular_masses[cond], domain=[0,np.inf],
-                             consider_intervs=False)
+                             weights=molecular_masses[cond],
+                             domain=[0,np.inf], consider_intervs=False)
             mean_abunds[source][position] = mean_abund_i
     print('\nMean abundance.')
     for source in mean_abunds:
@@ -755,9 +755,10 @@ if compute_mean_mol_mass:
                 y = np.log10(weights) - min_log + (1/4) * (max_log - min_log)
                 y = np.maximum(0., y)
                 return y
-            mean_mol_mass_i = rv.rich_fmean(molecular_masses[cond],
+            mean_mol_mass_i = rv.fmean(molecular_masses[cond],
                                 weights=abunds[source][position][cond],
-                                weight_function=log_weights, domain=[0,np.inf])
+                                weight_function=log_weights,
+                                domain=[0,np.inf], consider_intervs=False)
             mean_mol_masses[source][position] = mean_mol_mass_i
     print('\nMean molecular mass. (g/mol)')
     for source in mean_mol_masses:
