@@ -11,7 +11,7 @@ title height: 0.95
 subplot titles height: 0.92
 fit plot style: 'curve'
 fit color: 'tab:red'
-gaussian fit: yes
+gaussian fit: no
 show transitions: yes
 show quantum numbers: no
 show all species transitions: no
