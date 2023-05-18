@@ -231,6 +231,10 @@ def format_species_name(input_name, simplify_numbers=True, acronyms={}):
         Input text.
     simplify_numbers : bool, optional
         Remove the brackets between single numbers.
+    acronyms : dict
+        Dictionary of acronyms for species name. If the input text is one of
+        the dictionary keys, it will be replaced by the corresponding value,
+        and then the formatting function will be still applied.
 
     Returns
     -------
@@ -243,7 +247,7 @@ def format_species_name(input_name, simplify_numbers=True, acronyms={}):
         if original_name == name:
             original_name = acronyms[name]
     # prefixes
-    possible_prefixes = ['cis-', 'trans-']
+    possible_prefixes = ['cis-', 'trans-', '#', '@', '$']
     prefix = ''
     for text in possible_prefixes:
         if original_name.startswith(text):
@@ -309,14 +313,6 @@ def format_species_name(input_name, simplify_numbers=True, acronyms={}):
             output_name += '$_{' + subscript + '}$'
         prev_char = char
     output_name = output_name.replace('^$_', '$^').replace('$$', '')
-    # # vibrational numbers
-    # output_name = output_name.replace(',vt', ', vt')
-    # output_name = output_name.replace(', vt=', '$, v_t=$')
-    # output_name = output_name.replace(',v=', '$, v=$')
-    # for i,char in enumerate(output_name):
-    #     if output_name[i:].startswith('$v_t=$'):
-    #         output_name = output_name[:i+5] + \
-    #             output_name[i+5:].replace('$_','').replace('_$','')
     # some formatting
     output_name = output_name.replace('$$', '').replace('__', '')
     # remove brackets from single numbers
@@ -325,6 +321,10 @@ def format_species_name(input_name, simplify_numbers=True, acronyms={}):
         for number in set(single_numbers):
             output_name = output_name.replace('{'+number+'}', number)
     # prefix
+    if prefix == '$':
+        prefix = '\$'
+    if prefix in ('\$', '#', '@'):
+        prefix += '$\,$'
     output_name = prefix + output_name
     output_name = output_name.replace('$^$', '')
     return output_name
@@ -523,6 +523,7 @@ default_options = {
     'fit color': 'tab:red',
     'all species fit color': 'tab:blue',
     'other species color': 'tab:blue',
+    'fill spectrum': False,
     'figure titles': [],
     'data folders': [],
     'species': [],
@@ -536,6 +537,7 @@ default_options = {
     'transition labels minimum distance': 0.08
     }
 gray = tuple([0.6]*3)
+light_gray = tuple([0.8]*3)
 plt.close('all')
 
 # Folder sepatator.
@@ -591,6 +593,7 @@ gaussian_fit = config['gaussian fit']
 usual_fit_color = config['fit color']
 all_species_fit_color = config['all species fit color']
 other_species_color = config['other species color']
+fill_spectrum = config['fill spectrum']
 show_transitions = config['show transitions']
 show_all_species_transitions = config['show all species transitions']
 show_quantum_numbers = config['show quantum numbers']
@@ -837,6 +840,10 @@ for f,folder in enumerate(folders):
             velocity_label = frequency_label
             velocity_lims = frequency_lims
         plt.step(velocity, intensity, where='mid', color=[0.1]*3, lw=lw)
+        if fill_spectrum:
+            plt.fill_between(velocity, intensity, step='mid', color=light_gray)
+            plt.axhline(y=0, color=0.9*np.array(light_gray),
+                        lw=0.5*lw, zorder=1.)
         if show_quantum_numbers or show_all_species_transitions:
             y1, y2 = plt.ylim()
             if show_quantum_numbers and show_all_species_transitions:
