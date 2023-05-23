@@ -3,7 +3,7 @@
 """
 MADCUBA Lines Plotter
 ---------------------
-Version 1.5
+Version 1.6
 
 Copyright (C) 2023 - Andrés Megías Toledano
 
@@ -881,7 +881,7 @@ for f,folder in enumerate(folders):
         for line in transitions:
             x0 = float(line[0])
             name = line[1]
-            line_intensity = float(line[4])
+            line_intensity = float(line[4]) if len(line) > 4 else 0.
             if use_frequency:
                 x0 = freqs[i] * (1 + x0 / speed_light)
             molecule = format_species_name(name, acronyms=acronyms)
@@ -901,7 +901,9 @@ for f,folder in enumerate(folders):
                 lines_lim_i = min(0.1*intensity.max(), ylims[1])
             else:
                 lines_lim_i = copy.copy(lines_lim)
-            if line_intensity > lines_lim_i:
+            is_uplim = line[8] if len(line) > 8 else False
+            is_uplim = True if is_uplim == 'true' else False
+            if not is_uplim and line_intensity > lines_lim_i:
                 lines[i] += [{'position': x0, 'molecule': name, 'label': label,
                               'intensity': line_intensity}]
         plt.margins(x=0)
