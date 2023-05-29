@@ -271,7 +271,7 @@ def format_species_name(input_name, simplify_numbers=True, acronyms={}):
         if char == '-' and not in_upperscript:
             inds += [i]
             in_upperscript = True
-        if in_upperscript and not char.isdigit():
+        if in_upperscript and not (char.isdigit() or char == '-'):
             in_upperscript = False
         if not possible_upperscript:
             output_name += char
@@ -495,6 +495,7 @@ def parse_text_location(text, fig):
     y1, y2 = float(y1), float(y2)
     return x1, x2, y1, y2
 
+#%%
 
 # Default options.
 default_options = {
