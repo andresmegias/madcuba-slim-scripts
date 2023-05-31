@@ -14,12 +14,14 @@ fit plot style: 'curve'
 fit color: 'tab:red'
 gaussian fit: yes
 show transitions: yes
-show quantum numbers: no
 show all species transitions: yes
 show all species fit: no
 show main species transitions: yes
-show rest species transitions: yes
+show rest species transitions: no
 mark transitions with lines: yes
+show species names: yes
+show quantum numbers: no
+show subplot titles: yes
 use common labels: no
 join subplots: yes
 
