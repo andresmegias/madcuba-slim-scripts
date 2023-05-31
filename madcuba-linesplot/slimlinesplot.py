@@ -3,7 +3,7 @@
 """
 MADCUBA Lines Plotter
 ---------------------
-Version 1.6
+Version 1.7
 
 Copyright (C) 2023 - Andrés Megías Toledano
 
@@ -534,10 +534,12 @@ default_options = {
     'species acronyms': [],
     'join subplots': True,
     'show transitions': False,
-    'show quantum numbers': False,
     'show main species transitions': True,
     'show rest species transitions': False,
     'mark transitions with lines': True,
+    'show species names': True,
+    'show quantum numbers': False,
+    'show subplot titles': True,
     'save figure': True,
     'show all species fit': False,
     'transition labels minimum distance': 0.08
@@ -614,7 +616,9 @@ show_transitions = config['show transitions']
 show_main_species_lines = config['show main species transitions']
 show_rest_species_lines = config['show rest species transitions']
 mark_lines = config['mark transitions with lines']
+show_species_names = config['show species names']
 show_quantum_numbers = config['show quantum numbers']
+show_subplot_titles = config['show subplot titles']
 save_figure = config['save figure']
 label_min_dist = config['transition labels minimum distance']
 show_all_species_fit = config['show all species fit']
@@ -914,15 +918,14 @@ for (f, folder) in enumerate(folders):
             if use_frequency:
                 x0 = freqs[i] * (1 + x0 / speed_light)
             x0 *= spectral_factor
-            molecule = format_species_name(name, acronyms=acronyms)
-            label = '' 
+            label = ''
+            if show_species_names:
+                molecule = format_species_name(name, acronyms=acronyms)
+                label += molecule
+                if show_quantum_numbers:
+                    label += ':  '
             if show_quantum_numbers:
                 label += format_quantum_numbers(line[2])
-            if show_rest_species_lines:
-                prefix = molecule
-                if show_quantum_numbers:
-                    prefix += ':  '
-                label = prefix + label
             entry = list(config['species'][i].keys())[0]
             if 'transitions threshold' in config['species'][i][entry]:
                 lines_lim_i = config['species'][i][entry]['transitions threshold']
@@ -946,10 +949,12 @@ for (f, folder) in enumerate(folders):
         elif (use_frequency and len(frequency_lims) == 0
               or not use_frequency and len(spectral_lims) == 0):
             plt.tick_params(axis='y', pad=8.)
-        if len(titles[i]) > 0 and not show_rest_species_lines:
+        if len(titles[i]) > 0 and show_subplot_titles:
             plt.text(0.05, subtitles_height, titles[i], transform=ax.transAxes,
                       horizontalalignment='left', verticalalignment='top',
-                      fontsize=label_font_size)
+                      fontsize=label_font_size,
+                      bbox=dict(boxstyle='round', color='white', alpha=0.8,
+                                linewidth=0., zorder=3.))
         
     fig.align_ylabels()
     plt.suptitle(figure_titles[f], fontweight='semibold', y=title_height)
@@ -1051,8 +1056,10 @@ for (f, folder) in enumerate(folders):
             if len(lines_i) == 0:
                 molecule = format_species_name(entry)
                 axes[i].text(0.05, subtitles_height, molecule,
-                             transform=axes[i].transAxes, ha='left', va='top',
-                             fontsize=label_font_size)
+                        transform=axes[i].transAxes, ha='left', va='top',
+                        fontsize=label_font_size,
+                        bbox=dict(boxstyle='round', color='white', alpha=0.8,
+                                                     linewidth=0., zorder=3.))
                 continue
             if 'label font size' in config['species'][i][entry]:
                 lfs = config['species'][i][entry]['label font size']
@@ -1111,7 +1118,7 @@ for (f, folder) in enumerate(folders):
                             y0_label_or = copy.copy(y0_label)
                             text = axes[i].text(x=x0_label, y=y0_label, s=label,
                                     rotation=90, fontsize=lfs, alpha=0.,
-                                    ha='left', va='top', color=color)
+                                    ha='left', va='top', color=color, zorder=2.)
                             x1_pix, x2_pix, y1_pix, y2_pix = \
                                 parse_text_location(text, fig)
                             spectralvar = spectra[i][:,0]
@@ -1123,13 +1130,12 @@ for (f, folder) in enumerate(folders):
                                                * yrange)
                             y0_label = min(y0_label_or, y0_label)
                         text = axes[i].text(x=x0_label, y=y0_label, s=label,
-                                            rotation=90, fontsize=lfs,
-                                            ha='center', va='top', color=color)
+                                        rotation=90, fontsize=lfs, zorder=2.,
+                                        ha='center', va='top', color=color)
                         x1_pix, x2_pix, y1_pix, y2_pix = \
                             parse_text_location(text, fig)
                         ymin = ylim1 / yrange
-                        if (not show_rest_species_lines
-                            and not show_quantum_numbers):
+                        if not (show_species_names or show_quantum_numbers):
                             ymax = 1.0
                         else:
                             ymax = (y0_label/yrange - 0.03
