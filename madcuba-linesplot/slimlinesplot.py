@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-config_file = 'examples/L1517B.yaml'
+config_file = 'examples/N3.yaml'
 
 # Libraries and functions.
 
@@ -247,12 +247,15 @@ def format_species_name(input_name, simplify_numbers=True, acronyms={}):
         if original_name == name:
             original_name = acronyms[name]
     # prefixes
-    possible_prefixes = ['cis-', 'trans-', '#', '@', '$']
-    prefix = ''
-    for text in possible_prefixes:
-        if original_name.startswith(text):
-            prefix = text
-            break
+    possible_prefixes = ['#', '@', '$']
+    if '-' in original_name:
+        prefix = original_name.split('-')[0]
+    else:
+        prefix = ''
+        for text in possible_prefixes:
+            if original_name.startswith(text):
+                prefix = text
+                break
     original_name = original_name.replace(prefix, '')
     # removing the additional information after commas
     original_name = original_name.split(',')[0]
@@ -654,11 +657,11 @@ speed_light = 2.99e5  # km/s
 # Graphical options.
 lw = line_width
 flw = fit_line_width
-plt.rcParams.update({'font.size': font_size})
-plt.rcParams.update({'axes.linewidth': frame_width})
+plt.rcParams['font.size'] = font_size
+plt.rcParams['axes.linewidth'] = frame_width
 for i in ['x','y']:
-    plt.rcParams.update({i+'tick.major.width': frame_width})
-    plt.rcParams.update({i+'tick.minor.width': 0.8*frame_width})
+    plt.rcParams[i+'tick.major.width'] = frame_width
+    plt.rcParams[i+'tick.minor.width'] = 0.8*frame_width
 plt.rcParams['xtick.direction'] = ticks_direction
 plt.rcParams['ytick.direction'] = ticks_direction
 plt.rcParams['xtick.major.size'] = 5.
@@ -692,9 +695,9 @@ for (f, folder) in enumerate(folders):
         all_spectra = sorted([str(pp) for pp in all_spectra])
         if len(all_spectra) == 0:
             raise Exception('No files for molecule {}.'.format(molecule))
+        config_prefix = config['species'][i][molecule]['file']
         for spectrum in all_spectra:
             spectrum = spectrum.split('/')[-1]
-            config_prefix = config['species'][i][molecule]['file']
             if type(config_prefix) in (list,tuple):
                 config_prefix = config_prefix[f]
             if spectrum.startswith(config_prefix):
@@ -732,6 +735,10 @@ for (f, folder) in enumerate(folders):
                 else:
                     manual_lines_i = {}
                 manual_lines += [manual_lines_i]
+                break
+            else:
+                raise Exception('File not found for molecule {}.'
+                                .format(molecule))
                 
         if join_subplots:
             if ('intensity limits' in config['species'][i][molecule]
@@ -837,7 +844,7 @@ for (f, folder) in enumerate(folders):
                 if 'position' in manual_lines[i]:
                     means = np.array(manual_lines[i]['position'], float)
                 else:
-                    means = float(transitions_main[i][0])
+                    means = float(transitions_main[i][0][0])
                 widths = [widths] if type(widths) is not list else widths
                 heights = [heights] if type(heights) is not list else heights
                 means = [means] if type(means) is not list else means
@@ -882,7 +889,6 @@ for (f, folder) in enumerate(folders):
             else:
                 margin = 0.8
             y2 += margin*(y2-y1)
-            plt.ylim(y1, y2)
         if len(plot_fits) > 0 and plot_fits[i]:
             if fit_style == 'steps':
                 plt.step(spectralvar_fit, intensity_fit, where='mid',
@@ -911,6 +917,17 @@ for (f, folder) in enumerate(folders):
                     transitions += [transition_j]
         velocity /= spectral_factor
         intensity /= intensity_factor
+        entry = list(config['species'][i].keys())[0]
+        config_entry = config['species'][i][entry]
+        if 'transitions threshold' in config['species'][i][entry]:
+            lines_lim_i = config_entry['transitions threshold']
+        elif lines_lim == 'auto':
+            ylims = (config_entry['intensity limits']
+                     if 'intensity limits' in config_entry else plt.ylim())
+            plt.ylim(ylims)
+            lines_lim_i = min(0.1*intensity.max(), ylims[1])
+        else:
+            lines_lim_i = copy.copy(lines_lim)
         for line in transitions:
             x0 = float(line[0])
             name = line[1]
@@ -926,14 +943,6 @@ for (f, folder) in enumerate(folders):
                     label += ':  '
             if show_quantum_numbers:
                 label += format_quantum_numbers(line[2])
-            entry = list(config['species'][i].keys())[0]
-            if 'transitions threshold' in config['species'][i][entry]:
-                lines_lim_i = config['species'][i][entry]['transitions threshold']
-            elif lines_lim == 'auto':
-                ylims = plt.ylim()
-                lines_lim_i = min(0.1*intensity.max(), ylims[1])
-            else:
-                lines_lim_i = copy.copy(lines_lim)
             is_uplim = line[8] if len(line) > 8 else False
             is_uplim = True if is_uplim == 'true' else False
             if not is_uplim and line_intensity > lines_lim_i:
@@ -1011,6 +1020,7 @@ for (f, folder) in enumerate(folders):
                 axes[idx].xaxis.set_major_locator(ticker.MaxNLocator(3))
             else:
                 axes[idx].set_xlim(xlims)
+
            
     if not join_subplots:
         for (i, entry) in enumerate(config['species']):
@@ -1192,17 +1202,4 @@ for (f, folder) in enumerate(folders):
 print()
 plt.show()
 
-# Restore the default graphical options.
-plt.rcParams['font.size'] = plt.rcParamsDefault['font.size']
-plt.rcParams['axes.linewidth'] = plt.rcParamsDefault['axes.linewidth']
-for i in ['x','y']:
-    plt.rcParams[i+'tick.major.width'] = \
-        plt.rcParamsDefault[i+'tick.major.width']
-    plt.rcParams[i+'tick.minor.width'] = \
-        plt.rcParamsDefault[i+'tick.minor.width']
-plt.rcParams['xtick.direction'] = plt.rcParamsDefault['xtick.direction']
-plt.rcParams['ytick.direction'] = plt.rcParamsDefault['ytick.direction']
-plt.rcParams['xtick.major.size'] = plt.rcParamsDefault['xtick.major.size'] 
-plt.rcParams['ytick.major.size'] = plt.rcParamsDefault['ytick.major.size']
-plt.rcParams['ytick.right'] = plt.rcParamsDefault['ytick.right']
-plt.rcParams['xtick.top'] = plt.rcParamsDefault['xtick.top']
+plt.rcParams.update(plt.rcParamsDefault)
