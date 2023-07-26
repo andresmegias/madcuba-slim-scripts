@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-config_file = 'example/L1517B.yaml'
+config_file = 'examples/L1517B.yaml'
 
 # Libraries and functions.
 
@@ -700,6 +700,7 @@ for (f, folder) in enumerate(folders):
             spectrum = spectrum.split('/')[-1]
             if type(config_prefix) in (list,tuple):
                 config_prefix = config_prefix[f]
+            was_file_found = False
             if spectrum.startswith(config_prefix):
                 spectrum_files += [folder + molecule + data_subfolder + spectrum]
                 if 'title' in config['species'][i][molecule]:
@@ -735,10 +736,11 @@ for (f, folder) in enumerate(folders):
                 else:
                     manual_lines_i = {}
                 manual_lines += [manual_lines_i]
+                was_file_found = True
                 break
-            else:
-                raise Exception('File not found for molecule {}.'
-                                .format(molecule))
+        if not was_file_found:
+            raise Exception('File not found for molecule {}.'
+                            .format(molecule))
                 
         if join_subplots:
             if ('intensity limits' in config['species'][i][molecule]
@@ -844,7 +846,10 @@ for (f, folder) in enumerate(folders):
                 if 'position' in manual_lines[i]:
                     means = np.array(manual_lines[i]['position'], float)
                 else:
-                    means = float(transitions_main[i][0][0])
+                    means = transitions_main[i][0]
+                    if type(means) in (list, tuple):
+                        means = means[0]
+                    means = float(means)
                 widths = [widths] if type(widths) is not list else widths
                 heights = [heights] if type(heights) is not list else heights
                 means = [means] if type(means) is not list else means
